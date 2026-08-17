@@ -1,0 +1,9 @@
+const Dashboard = () => {
+    return (
+        <div>
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. In, unde repellendus incidunt rerum deserunt rem libero quas! Voluptates sed quo in animi saepe! Rerum possimus nobis asperiores, facere veritatis, vitae est dolor incidunt harum illum, deleniti voluptatem consequuntur sit necessitatibus blanditiis odit id quasi. Laborum blanditiis quos quisquam rerum quo dolorem minus amet? Quidem vitae ducimus praesentium eligendi hic sapiente. Necessitatibus enim harum dolore sit id ex maiores rerum. Vitae quasi nihil et fugiat debitis quidem aliquid minus voluptate porro laudantium quod, libero dignissimos ullam odit architecto. Culpa quam molestiae consequatur corrupti recusandae accusantium sunt odio veritatis perferendis in suscipit praesentium officiis sapiente, cumque sint iste error exercitationem adipisci odit a fuga assumenda nihil. In, dignissimos minima expedita similique aut ex ad architecto, sed animi dolores placeat quasi quia eveniet, fugit non. Earum, hic? Non corrupti laudantium doloribus cum recusandae officiis incidunt perferendis pariatur fugit quasi ex perspiciatis esse, libero, at sequi ullam consequuntur, obcaecati repudiandae illum? Expedita voluptas molestias accusamus illum! Illum, velit officiis quos quidem itaque molestias iusto vero voluptatem temporibus. Facilis, quaerat suscipit perspiciatis debitis animi, neque voluptatibus magni nobis sed eaque earum provident amet consectetur saepe magnam exercitationem eos sapiente aperiam maxime non corporis aliquam. Rem?
+        </div>
+    );
+};
+
+export default Dashboard;
