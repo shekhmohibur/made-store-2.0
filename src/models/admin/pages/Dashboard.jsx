@@ -1,7 +1,142 @@
+import {
+    Store, Users as UsersIcon, DollarSign, TrendingUp, Plus, Activity,
+    ShoppingCart, CheckCircle2, XCircle,
+} from 'lucide-react';
+
 const Dashboard = () => {
+    const stats = [
+        { label: 'Total Shops', value: '248', delta: '+12.5%', icon: <Store size={20} />, color: 'from-purple-500 to-indigo-600' },
+        { label: 'Active Users', value: '1,024', delta: '+8.2%', icon: <UsersIcon size={20} />, color: 'from-blue-500 to-cyan-600' },
+        { label: 'Monthly Revenue', value: '$86,420', delta: '+15.4%', icon: <DollarSign size={20} />, color: 'from-emerald-500 to-teal-600' },
+        { label: 'Conversion Rate', value: '3.6%', delta: '+0.8%', icon: <TrendingUp size={20} />, color: 'from-amber-500 to-orange-600' },
+    ];
+
+    const orders = [
+        { id: '#ORD-2109', shop: 'Urban Threads', customer: 'Amina Yusuf', amount: '$240.00', status: 'Completed', date: 'Aug 18' },
+        { id: '#ORD-2110', shop: 'Street Vogue', customer: 'Daniel Okafor', amount: '$95.50', status: 'Pending', date: 'Aug 18' },
+        { id: '#ORD-2111', shop: 'Linen & Co', customer: 'Grace Mensah', amount: '$312.00', status: 'Completed', date: 'Aug 17' },
+        { id: '#ORD-2112', shop: 'Heritage Wear', customer: 'Tunde Bakare', amount: '$74.99', status: 'Refunded', date: 'Aug 17' },
+        { id: '#ORD-2113', shop: 'Urban Threads', customer: 'Blessing Ade', amount: '$188.40', status: 'Completed', date: 'Aug 16' },
+    ];
+
     return (
-        <div>
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Incidunt eaque laudantium atque reprehenderit omnis nesciunt autem quibusdam, necessitatibus, assumenda harum blanditiis optio repellat maiores fugiat! Consequatur est inventore animi doloribus, aspernatur tempora harum distinctio nesciunt sequi autem dolorem repellat aperiam eos maiores, aliquam et vel officia tenetur quia similique accusamus illo. Doloremque sint repellendus consectetur reiciendis asperiores numquam atque dolore molestiae quaerat, eius exercitationem excepturi modi assumenda perferendis temporibus, illo aliquid quo ratione unde nostrum nulla velit vel! Hic amet magni earum similique corporis, non quibusdam nam nihil accusamus culpa neque reprehenderit! Harum pariatur est vero doloremque ratione in tempora consequuntur impedit dignissimos voluptatibus. Quisquam dolore repellat quasi cum exercitationem consectetur facilis, a animi sit rem necessitatibus at velit cupiditate minus inventore, eum omnis vitae magnam ipsa numquam natus. Laboriosam, at quisquam, repellendus cupiditate aspernatur provident iusto modi adipisci consectetur incidunt sequi corporis! Quo commodi, fuga sed nesciunt molestias temporibus eos porro obcaecati distinctio, atque dolorem nisi, voluptatum reiciendis dicta dolorum quod odit iste minima ea nihil esse id? Ratione hic facilis cum cupiditate soluta quos reprehenderit culpa rerum minus, tempora saepe nisi, magnam iure esse! Minus hic, dolorem, voluptas optio deleniti aspernatur ea itaque aliquid, quae sunt ratione labore! Quisquam ducimus quas sunt laboriosam amet in molestias, dolorum quia neque, veniam voluptatum. Assumenda quaerat sed voluptatum, magnam facilis provident dolorem cum veniam nihil culpa vitae consequatur libero iste omnis voluptates sint odit distinctio. Quod, eligendi possimus recusandae aliquam hic architecto cumque ex, neque consequuntur odit dicta dolor? Eum consectetur commodi eligendi vel, voluptate distinctio facere culpa, quas nesciunt, expedita a ducimus illo! Excepturi voluptate tempora ipsum cumque qui adipisci explicabo. Aliquam dolor iure illo beatae temporibus a expedita nobis fuga doloribus quae quos repudiandae, reprehenderit quam officia culpa corrupti eligendi rem animi, enim recusandae quisquam assumenda. Nulla, iure numquam laborum voluptatibus hic aspernatur natus, voluptates velit nesciunt facere ducimus impedit atque enim reiciendis eius quas odio non et nam sapiente ipsam obcaecati magni! Unde commodi nostrum nihil sapiente placeat aliquam, vel soluta corrupti provident accusantium exercitationem suscipit nesciunt sit? Minus quo in a similique expedita eveniet tempora at nostrum! Blanditiis quod, eius assumenda quo at, incidunt aliquam vero molestias neque repudiandae perferendis deserunt fugit suscipit! Distinctio dignissimos, exercitationem facilis eum eos nulla quae ea fugiat porro numquam nostrum natus. Nulla sequi nostrum eligendi quisquam, dolorem id, doloremque natus inventore aut ipsa quidem consequuntur! Veniam quisquam sapiente dolores nulla voluptates nam. Neque reiciendis expedita aperiam! Temporibus id quo dolorem hic culpa minima possimus eaque impedit excepturi. Ullam ab obcaecati maxime animi quod. Maxime reiciendis repellat recusandae error nobis consequatur nulla nisi iusto a? Asperiores temporibus sapiente vel minus. Animi cum accusantium dolorem aliquam, ut est modi error iusto dignissimos voluptates. Ratione sapiente officiis ullam doloribus eveniet, placeat laboriosam aperiam, odit libero quibusdam est aliquam molestiae, eum accusamus suscipit maxime! Distinctio fuga id, nobis doloribus praesentium culpa impedit. Nesciunt aliquid eum libero eligendi suscipit. Aperiam consequuntur facilis rerum doloremque quam, possimus suscipit nam maxime placeat, tempora id exercitationem ipsa deleniti cumque. Perspiciatis esse nesciunt veniam quis quaerat cumque doloribus est vitae rerum alias, placeat blanditiis illum perferendis modi nobis, in voluptatum voluptate molestiae ad. Tenetur libero praesentium facere in facilis dolorem earum repudiandae esse. Ab ex quisquam, iusto veniam quo velit corporis. Porro, officiis asperiores numquam impedit odio nemo aspernatur et amet qui delectus. Deserunt enim amet nam vitae alias repellat eius exercitationem laborum dolores ex quas error suscipit culpa quod itaque voluptatibus quaerat nulla reiciendis, quibusdam accusantium et quia distinctio. Veniam reprehenderit sunt id rerum nam molestiae, praesentium vero enim velit ea doloremque, sapiente recusandae vel minima. Qui, animi. Blanditiis debitis iste officiis deleniti, repellendus sint odio culpa molestias doloribus at quae accusantium ipsa architecto quaerat soluta assumenda vitae, odit minima quisquam corrupti labore dolor saepe. Minus repudiandae voluptatem tempora asperiores, esse odit mollitia consequuntur laborum eius soluta magni doloribus quo. Deserunt hic quod ab necessitatibus, explicabo sapiente similique consectetur illum accusamus, tempore ad mollitia vero. Ab, repellat, cupiditate est rerum id quasi labore, nulla harum maxime ipsa consequuntur magni mollitia sit! Doloribus quas facere enim et. Corrupti modi eveniet ut ex repellat sequi rerum ratione assumenda iusto, illum adipisci itaque exercitationem nemo doloremque veniam maxime aspernatur autem sint deserunt. Praesentium soluta porro delectus fugit nisi mollitia esse sed adipisci officiis facere quibusdam illum quam aut est obcaecati alias culpa a, assumenda ipsam ab! Neque quis dicta, aspernatur voluptate voluptatum labore facilis debitis quos, unde iste nostrum error eos quo eaque maiores nesciunt perferendis aut ut vel soluta animi placeat voluptates ipsa. Earum velit et, excepturi, quae commodi aliquam nemo nostrum beatae id optio molestias molestiae vel sint laborum nulla sapiente quidem nam, error fugiat animi numquam ex? Officiis culpa consequatur maxime officia mollitia adipisci, necessitatibus ducimus et dolor libero animi debitis hic, repellendus consequuntur saepe inventore autem quasi consectetur doloribus, earum ex. Unde, quo aut labore sit repellendus deserunt. Laudantium porro officia delectus molestiae! Eum suscipit reiciendis optio, rem odit explicabo ducimus alias sapiente accusantium iure excepturi expedita quis dolor provident quisquam dolore, magni maiores totam voluptatum eligendi tempora! Quisquam, dolor sint ipsam, iure cupiditate est quasi, iste ab libero necessitatibus corrupti. Magni, suscipit dolor laudantium, quia ducimus veniam perspiciatis reiciendis aut expedita doloribus maiores praesentium sunt id, odio illum quibusdam ipsum vero vitae. Doloribus harum hic temporibus, quis error officiis ipsam quas nam esse excepturi doloremque earum nobis enim, delectus labore sequi quisquam magnam assumenda. Ipsum, quia. Dolores nostrum odio quisquam corporis mollitia ratione iusto cum minus, vitae eaque sapiente neque repudiandae ipsam ex tenetur. Sunt nisi consequuntur molestiae, sapiente asperiores voluptates modi ipsa animi, recusandae cumque reprehenderit ex fuga ea possimus eaque, aliquid doloremque! Nisi inventore dolore, quibusdam quae reprehenderit ab dolorem nesciunt! Necessitatibus voluptatem porro non atque minus ratione quaerat eveniet recusandae quis tenetur est voluptas et reprehenderit inventore dolorum at quas ea quo molestiae reiciendis amet, debitis labore consequatur? Non perspiciatis unde placeat accusantium quae labore eius temporibus, distinctio necessitatibus facilis, ab aliquid, voluptatum maxime cum saepe ex voluptate aut a magni rerum odio assumenda.        </div>
+        <>
+            {/* Page header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+                    <p className="text-sm text-gray-500">Welcome back, Super Admin 👋 Here's what's happening today.</p>
+                </div>
+                <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow hover:opacity-95">
+                    <Plus size={18} /> New Shop
+                </button>
+            </div>
+
+            {/* Stat cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                {stats.map((s, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <span className={`w-11 h-11 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white shadow`}>
+                                {s.icon}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                <TrendingUp size={12} /> {s.delta}
+                            </span>
+                        </div>
+                        <p className="mt-4 text-2xl font-bold text-gray-800">{s.value}</p>
+                        <p className="text-sm text-gray-500">{s.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+    {/* Revenue Chart */}
+    <div className="xl:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-800">Revenue Overview</h3>
+            <div className="flex items-center gap-2 text-xs">
+                <button className="px-3 py-1 rounded-md bg-purple-600 text-white">7 Days</button>
+                <button className="px-3 py-1 rounded-md text-gray-500 hover:bg-gray-100">30 Days</button>
+                <button className="px-3 py-1 rounded-md text-gray-500 hover:bg-gray-100">12 Months</button>
+            </div>
+        </div>
+        <div className="flex items-end gap-1.5 h-56">
+            {[45, 60, 38, 75, 52, 88, 66, 95, 72, 84, 58, 100].map((h, i) => (
+                <div key={i} className="flex-1 flex items-end rounded-t-md bg-gradient-to-t from-purple-500 to-indigo-400 hover:from-purple-600 transition-all" style={{ height: `${h}%` }} />
+            ))}
+        </div>
+        <div className="flex justify-between mt-2 text-[10px] text-gray-400">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].concat(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']).map((d, i) => (
+                <span key={i}>{d}</span>
+            ))}
+        </div>
+    </div>
+
+    {/* Activity */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h3 className="font-semibold text-gray-800 mb-4">Recent Activity</h3>
+        <div className="space-y-4">
+            {[
+                { icon: <ShoppingCart size={16} />, c: 'bg-purple-100 text-purple-600', t: 'New order placed', s: '2 min ago' },
+                { icon: <CheckCircle2 size={16} />, c: 'bg-emerald-100 text-emerald-600', t: 'Shop approved', s: '35 min ago' },
+                { icon: <UsersIcon size={16} />, c: 'bg-blue-100 text-blue-600', t: 'New user registered', s: '1 hr ago' },
+                { icon: <XCircle size={16} />, c: 'bg-red-100 text-red-600', t: 'Payment declined', s: '3 hrs ago' },
+                { icon: <Activity size={16} />, c: 'bg-amber-100 text-amber-600', t: 'System backup', s: '5 hrs ago' },
+            ].map((a, i) => (
+                <div key={i} className="flex items-center gap-3">
+                    <span className={`w-9 h-9 rounded-lg ${a.c} flex items-center justify-center shrink-0`}>{a.icon}</span>
+                    <div className="min-w-0">
+                        <p className="text-sm text-gray-700 truncate">{a.t}</p>
+                        <p className="text-xs text-gray-400">{a.s}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+</div>
+
+{/* Recent Orders Table */}
+<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 className="font-semibold text-gray-800">Recent Orders</h3>
+        <button className="text-sm text-purple-600 font-medium hover:underline">View all</button>
+    </div>
+    <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+            <thead>
+                <tr className="text-left text-xs text-gray-500 border-b border-gray-100 bg-gray-50/50">
+                    <th className="px-5 py-3 font-medium">Order</th>
+                    <th className="px-5 py-3 font-medium">Shop</th>
+                    <th className="px-5 py-3 font-medium">Customer</th>
+                    <th className="px-5 py-3 font-medium">Amount</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {orders.map((o, i) => {
+                    const badge = o.status === 'Completed' ? 'bg-emerald-50 text-emerald-600'
+                        : o.status === 'Pending' ? 'bg-amber-50 text-amber-600'
+                        : 'bg-red-50 text-red-500';
+                    return (
+                        <tr key={o.id} className={`border-b border-gray-50 hover:bg-gray-50/50 ${i === orders.length - 1 ? 'border-b-0' : ''}`}>
+                            <td className="px-5 py-3 font-medium text-gray-800">{o.id}</td>
+                            <td className="px-5 py-3 text-gray-600">{o.shop}</td>
+                            <td className="px-5 py-3 text-gray-600">{o.customer}</td>
+                            <td className="px-5 py-3 text-gray-700">{o.amount}</td>
+                            <td className="px-5 py-3">
+                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${badge}`}>{o.status}</span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-500">{o.date}</td>
+                        </tr>
+                    );
+                })}
+            </tbody>
+        </table>
+    </div>
+</div>
+        </>
     );
 };
 
