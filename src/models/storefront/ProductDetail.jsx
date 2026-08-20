@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import {
     ShoppingBag, Star, Heart, Truck,
     CheckCircle2, Ruler, ChevronRight,
-    Share2, X, Phone
+    Share2, X, Phone, Sparkles
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import FitFinderModal from '../../components/common/FitFinderModal';
 
 const SIZE_CHART = [
     { size: 'XS', chest: '32-34"', waist: '26-28"', hips: '34-36"' },
@@ -18,13 +19,13 @@ const SIZE_CHART = [
 const ProductDetail = () => {
     const { productId } = useParams();
     const { shop, addToCart, formatPrice = (p) => `$${Number(p).toFixed(2)}` } = useOutletContext();
-    const { wishlist, toggleWishlist, isWishlisted, addReview, showToast } = useStore();
+    const { getProductReviews, toggleWishlist, isWishlisted, addReview, showToast } = useStore();
 
     const product = useMemo(() => {
         return (shop.products || []).find((p) => p.id === productId) || shop.products?.[0];
     }, [shop.products, productId]);
 
-    const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+    const [selectedImage, setSelectedImage] = useState(() => product?.image || '');
     const [selectedSize, setSelectedSize] = useState(() => product?.sizes?.[0] || 'M');
     const [selectedColor, setSelectedColor] = useState(() => {
         if (!product?.colors || product.colors.length === 0) return 'Standard';
@@ -173,9 +174,9 @@ const ProductDetail = () => {
                         </h1>
 
                         <div className="flex items-baseline gap-3 mt-3">
-                            <span className="text-2xl sm:text-3xl font-black text-slate-900">${Number(product.price).toFixed(2)} USD</span>
+                            <span className="text-2xl sm:text-3xl font-black text-slate-900">{formatPrice(product.price)}</span>
                             {product.originalPrice > product.price && (
-                                <span className="text-base text-slate-400 line-through font-semibold">${Number(product.originalPrice).toFixed(2)} USD</span>
+                                <span className="text-base text-slate-400 line-through font-semibold">{formatPrice(product.originalPrice)}</span>
                             )}
                         </div>
 
@@ -196,12 +197,22 @@ const ProductDetail = () => {
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold tracking-widest uppercase text-slate-900">Select Size:</span>
-                            <button
-                                onClick={() => setIsSizeGuideOpen(true)}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 underline uppercase tracking-wider"
-                            >
-                                <Ruler size={12} /> Size Measurement Guide
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsFitFinderOpen(true)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-100 uppercase tracking-wider transition"
+                                >
+                                    <Sparkles size={11} /> Find Your Fit AI
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSizeGuideOpen(true)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 underline uppercase tracking-wider"
+                                >
+                                    <Ruler size={12} /> Size Guide
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
@@ -531,6 +542,14 @@ const ProductDetail = () => {
                     </form>
                 </div>
             )}
+
+            {/* AI Fit Finder Modal */}
+            <FitFinderModal
+                isOpen={isFitFinderOpen}
+                onClose={() => setIsFitFinderOpen(false)}
+                onSelectSize={(sz) => setSelectedSize(sz)}
+                currentSelectedSize={selectedSize}
+            />
         </div>
     );
 };

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Store, Check, User } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
+import ImageUploadInput from '../../../components/common/ImageUploadInput';
 
 const COLOR_PRESETS = [
     { name: 'Indigo Aura', hex: '#6366f1' },
@@ -175,6 +176,17 @@ const CreateShop = () => {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="sm:col-span-2 pt-2">
+                                <ImageUploadInput
+                                    value={form.banner || ''}
+                                    onChange={(compressedDataUrl) => setForm({ ...form, banner: compressedDataUrl })}
+                                    label="Boutique Hero Storefront Banner (Optional)"
+                                    maxWidth={1200}
+                                    maxHeight={600}
+                                    quality={0.65}
+                                />
                             </div>
                         </div>
                     </div>

@@ -44,7 +44,7 @@ const RECENT_BUYERS = [
 ];
 
 const Storefront = () => {
-    const { shop, addToCart } = useOutletContext();
+    const { shop, addToCart, formatPrice = (p) => `$${Number(p).toFixed(2)}` } = useOutletContext();
     const { toggleWishlist, isWishlisted, showToast } = useStore();
 
     const currentTheme = findThemeById(shop.activeTheme);
@@ -432,10 +432,10 @@ const Storefront = () => {
 
                                     {/* Price */}
                                     <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-900">
-                                        <span>${Number(p.price).toFixed(2)} USD</span>
+                                        <span>{formatPrice(p.price)}</span>
                                         {p.originalPrice > p.price && (
                                             <span className="text-slate-400 line-through text-[11px]">
-                                                ${Number(p.originalPrice).toFixed(2)} USD
+                                                {formatPrice(p.originalPrice)}
                                             </span>
                                         )}
                                     </div>
@@ -534,7 +534,7 @@ const Storefront = () => {
                                         <Link to={`/shop/${shop.slug}/product/${p.id}`} className="font-bold text-slate-800 line-clamp-1 hover:text-slate-950 transition">
                                             {p.name}
                                         </Link>
-                                        <p className="font-black text-slate-900 mt-1">${Number(p.price).toFixed(2)} USD</p>
+                                        <p className="font-black text-slate-900 mt-1">{formatPrice(p.price)}</p>
                                     </div>
                                 </div>
                             ))}
@@ -556,7 +556,7 @@ const Storefront = () => {
                                         <Link to={`/shop/${shop.slug}/product/${p.id}`} className="font-bold text-slate-800 line-clamp-1 hover:text-slate-950 transition">
                                             {p.name}
                                         </Link>
-                                        <p className="font-black text-slate-900 mt-1">${Number(p.price).toFixed(2)} USD</p>
+                                        <p className="font-black text-slate-900 mt-1">{formatPrice(p.price)}</p>
                                         <p className="text-[10px] text-slate-400 uppercase font-mono mt-0.5">{p.category}</p>
                                     </div>
                                 </div>
@@ -580,8 +580,8 @@ const Storefront = () => {
                                             {p.name}
                                         </Link>
                                         <div className="flex items-baseline gap-2 mt-1">
-                                            <span className="font-black text-slate-900">${Number(p.price).toFixed(2)} USD</span>
-                                            <span className="text-slate-400 line-through text-[10px]">${Number(p.originalPrice).toFixed(2)}</span>
+                                            <span className="font-black text-slate-900">{formatPrice(p.price)}</span>
+                                            <span className="text-slate-400 line-through text-[10px]">{formatPrice(p.originalPrice)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -721,9 +721,9 @@ const Storefront = () => {
                                 </div>
                                 <h3 className="text-xl font-serif text-slate-900 uppercase font-bold">{quickViewProduct.name}</h3>
                                 <div className="flex items-baseline gap-2 mt-1">
-                                    <span className="text-xl font-black text-slate-900">${quickViewProduct.price} USD</span>
+                                    <span className="text-xl font-black text-slate-900">{formatPrice(quickViewProduct.price)}</span>
                                     {quickViewProduct.originalPrice > quickViewProduct.price && (
-                                        <span className="text-xs text-slate-400 line-through">${quickViewProduct.originalPrice} USD</span>
+                                        <span className="text-xs text-slate-400 line-through">{formatPrice(quickViewProduct.originalPrice)}</span>
                                     )}
                                 </div>
                                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">

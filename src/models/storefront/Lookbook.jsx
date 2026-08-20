@@ -9,7 +9,7 @@ const LOOKS = [
         image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&auto=format&fit=crop&q=80',
         featuredProductId: 'UT-6',
         productName: 'Handmade Flared Wool Jacket',
-        price: '$129.90 USD',
+        price: 129.90,
         description: 'Structured wool tailoring paired with relaxed trousers and minimalist leather accessories.',
     },
     {
@@ -19,7 +19,7 @@ const LOOKS = [
         image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&auto=format&fit=crop&q=80',
         featuredProductId: 'UT-7',
         productName: 'Coat With Wool Wraparound Collar',
-        price: '$105.89 USD',
+        price: 105.89,
         description: 'Monochromatic warm taupe wool overcoat with dropped shoulder framing.',
     },
     {
@@ -29,7 +29,7 @@ const LOOKS = [
         image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1200&auto=format&fit=crop&q=80',
         featuredProductId: 'UT-5',
         productName: 'Mulberry Silk Bias Cut Slip Dress',
-        price: '$98.00 USD',
+        price: 98.00,
         description: 'Pure 19mm Grade 6A silk tailored on the bias for fluid evening movement.',
     },
     {
@@ -39,13 +39,13 @@ const LOOKS = [
         image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=1200&auto=format&fit=crop&q=80',
         featuredProductId: 'UT-1',
         productName: 'Vintage Washed Denim Jacket',
-        price: '$89.00 USD',
+        price: 89.00,
         description: 'Heavyweight Japanese denim layered over minimalist graphic tees.',
     },
 ];
 
 const Lookbook = () => {
-    const { shop } = useOutletContext();
+    const { shop, formatPrice = (p) => `$${Number(p).toFixed(2)}` } = useOutletContext();
     const [selectedLook, setSelectedLook] = useState(LOOKS[0]);
 
     return (
@@ -87,7 +87,7 @@ const Lookbook = () => {
                     <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 flex items-center justify-between gap-4 max-w-md">
                         <div>
                             <p className="font-bold text-white text-xs">{selectedLook.productName}</p>
-                            <p className="font-black text-amber-300 text-sm">{selectedLook.price}</p>
+                            <p className="font-black text-amber-300 text-sm">{formatPrice(selectedLook.price)}</p>
                         </div>
                         <Link
                             to={`/shop/${shop.slug}/product/${selectedLook.featuredProductId}`}
@@ -111,20 +111,17 @@ const Lookbook = () => {
                         <div
                             key={look.id}
                             onClick={() => setSelectedLook(look)}
-                            className={`group cursor-pointer rounded-2xl overflow-hidden border-2 transition ${
-                                selectedLook.id === look.id ? 'border-slate-950 ring-2 ring-slate-950/10' : 'border-slate-200 hover:border-slate-400'
-                            }`}
+                            className={`group cursor-pointer rounded-2xl border transition overflow-hidden ${selectedLook.id === look.id ? 'border-slate-950 shadow-md ring-2 ring-slate-950/20' : 'border-slate-200 hover:border-slate-400'}`}
                         >
-                            <div className="aspect-[3/4] bg-slate-100 overflow-hidden relative">
-                                <img
-                                    src={look.image}
-                                    alt={look.title}
-                                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                                />
-                                <div className="absolute bottom-2 left-2 right-2 bg-slate-950/80 backdrop-blur-xs p-3 rounded-xl text-white text-xs">
-                                    <p className="font-bold truncate">{look.title}</p>
-                                    <p className="text-[11px] text-slate-300 font-mono mt-0.5">{look.price}</p>
-                                </div>
+                            <div className="aspect-[3/4] overflow-hidden bg-slate-100 relative">
+                                <img src={look.image} alt={look.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 text-white text-[10px] font-bold uppercase">
+                                    {look.id}
+                                </span>
+                            </div>
+                            <div className="p-3 bg-white space-y-1">
+                                <p className="font-bold text-xs text-slate-900 line-clamp-1">{look.productName}</p>
+                                <p className="text-[11px] font-black text-slate-700">{formatPrice(look.price)}</p>
                             </div>
                         </div>
                     ))}

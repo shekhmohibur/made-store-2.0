@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { X, Sparkles, Check, Ruler, Info } from 'lucide-react';
+import { X, Sparkles, Check, Info } from 'lucide-react';
 
-const FitFinderModal = ({ isOpen, onClose, onSelectSize, currentSelectedSize }) => {
+const FitFinderModal = ({ isOpen, onClose, onSelectSize }) => {
     const [unit, setUnit] = useState('metric'); // 'metric' (cm/kg) or 'imperial' (ft/lbs)
     const [heightCm, setHeightCm] = useState(175);
     const [heightFt, setHeightFt] = useState(5);
@@ -165,6 +165,28 @@ const FitFinderModal = ({ isOpen, onClose, onSelectSize, currentSelectedSize }) 
                             }
                             className="w-full accent-slate-900 cursor-pointer"
                         />
+                    </div>
+
+                    {/* Body Build / Silhouette */}
+                    <div className="space-y-2">
+                        <span className="text-xs font-bold text-slate-700">Body Build</span>
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                            {[
+                                { id: 'slim', label: 'Slim' },
+                                { id: 'regular', label: 'Regular' },
+                                { id: 'athletic', label: 'Athletic' },
+                                { id: 'plus', label: 'Broad / Plus' },
+                            ].map((b) => (
+                                <button
+                                    key={b.id}
+                                    type="button"
+                                    onClick={() => setBuild(b.id)}
+                                    className={`p-2 rounded-xl border text-center font-bold transition ${build === b.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                    {b.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Fit Preference */}

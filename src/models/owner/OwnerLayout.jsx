@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ShoppingCart, BadgePercent, Store,
-    ExternalLink, ShieldCheck, X, Menu, Search, Palette, Settings
+    ExternalLink, ShieldCheck, X, Menu, Search, Palette, Settings,
+    Users
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import ToastContainer from '../../components/common/ToastContainer';
@@ -35,6 +36,7 @@ const OwnerLayout = () => {
         { name: 'Theme & Template Studio', icon: <Palette size={18} />, path: `${basePath}/themes` },
         { name: 'Products & Inventory', icon: <Package size={18} />, path: `${basePath}/products` },
         { name: 'Customer Orders', icon: <ShoppingCart size={18} />, path: `${basePath}/orders` },
+        { name: 'Customer CRM & VIP', icon: <Users size={18} />, path: `${basePath}/customers` },
         { name: 'Discounts & Promo Codes', icon: <BadgePercent size={18} />, path: `${basePath}/discounts` },
         { name: 'Store Settings & Brand', icon: <Settings size={18} />, path: `${basePath}/settings` },
     ];

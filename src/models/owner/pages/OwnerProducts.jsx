@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
     Plus, Pencil, Trash2, AlertTriangle, Search,
-    LayoutGrid, Table as TableIcon, X
+    LayoutGrid, Table as TableIcon, X, Download, Upload, FileText
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
+import ImageUploadInput from '../../../components/common/ImageUploadInput';
 
 const CATEGORIES = ['Men', 'Women', 'Dresses', 'Casuals', 'Accessories'];
 const BADGES = ['None', 'New', 'Bestseller', 'Trending', 'Hot', 'Sale', 'Viral Pick', 'Premium'];
@@ -25,7 +26,7 @@ const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 const OwnerProducts = () => {
     const { shop, accent } = useOutletContext();
-    const { addProduct, updateProduct, deleteProduct, updateProductStock } = useStore();
+    const { addProduct, updateProduct, deleteProduct, updateProductStock, showToast } = useStore();
 
     const [viewMode, setViewMode] = useState('grid');
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +34,8 @@ const OwnerProducts = () => {
     const [stockFilter, setStockFilter] = useState('All');
 
     const [modalProduct, setModalProduct] = useState(null); // null = closed, {} = add, product = edit
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importData, setImportData] = useState('');
     const [selectedImage, setSelectedImage] = useState('');
     const [selectedEmoji, setSelectedEmoji] = useState('👕');
     const [selectedSizes, setSelectedSizes] = useState(['S', 'M', 'L', 'XL']);
@@ -113,6 +116,69 @@ const OwnerProducts = () => {
         );
     };
 
+    const exportCSV = () => {
+        const headers = ['Name,Category,Price,OriginalPrice,Stock,SKU,Badge,Sizes\n'];
+        const rows = (shop.products || []).map(
+            (p) => `"${p.name}","${p.category}",${p.price},${p.originalPrice || p.price},${p.stock},"${p.sku || p.id}","${p.badge || 'None'}","${(p.sizes || []).join('|')}"\n`
+        );
+        const blob = new Blob([headers.concat(rows)], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${shop.slug}-product-catalog.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Catalog exported to CSV successfully', 'success');
+    };
+
+    const handleBatchImport = (e) => {
+        e.preventDefault();
+        if (!importData.trim()) {
+            showToast('Please enter or paste product data', 'error');
+            return;
+        }
+
+        const lines = importData.trim().split('\n');
+        let count = 0;
+
+        lines.forEach((line) => {
+            const parts = line.split(',').map((p) => p.trim().replace(/^"|"$/g, ''));
+            if (parts.length >= 3 && !parts[0].toLowerCase().includes('name')) {
+                const name = parts[0];
+                const category = parts[1] || 'Casuals';
+                const price = Number(parts[2]) || 50;
+                const stock = parts[3] ? Number(parts[3]) : 25;
+                const preset = IMAGE_PRESETS[count % IMAGE_PRESETS.length];
+
+                addProduct(shop.id, {
+                    name,
+                    category,
+                    price,
+                    originalPrice: Math.round(price * 1.25),
+                    stock,
+                    sku: `SKU-${Date.now().toString().slice(-4)}-${count}`,
+                    emoji: preset.emoji,
+                    image: preset.url,
+                    sizes: ['S', 'M', 'L', 'XL'],
+                    colors: [{ name: 'Standard', hex: '#18181b' }],
+                    description: `High-quality ${category.toLowerCase()} crafted from sustainable materials.`,
+                });
+                count++;
+            }
+        });
+
+        setIsImportModalOpen(false);
+        setImportData('');
+        showToast(`Successfully imported ${count} apparel items to catalog!`, 'success');
+    };
+
+    const loadSampleImport = () => {
+        setImportData(
+            `"Tailored Linen Blazer", Men, 185.00, 30\n"Silk Charmeuse Evening Gown", Dresses, 290.00, 15\n"Organic French Terry Sweatpants", Casuals, 95.00, 40\n"Cashmere Knit Turtleneck", Women, 160.00, 20`
+        );
+    };
+
     const inputClass =
         'w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition';
     const labelClass = 'block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5';
@@ -128,13 +194,27 @@ const OwnerProducts = () => {
                         Manage styles, stock quantities, pricing, and variants for {shop.name}.
                     </p>
                 </div>
-                <button
-                    onClick={openAddModal}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition"
-                    style={{ backgroundColor: accent }}
-                >
-                    <Plus size={18} /> Add Apparel Item
-                </button>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                        onClick={exportCSV}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 shadow-xs transition"
+                    >
+                        <Download size={14} /> Export CSV
+                    </button>
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 shadow-xs transition"
+                    >
+                        <Upload size={14} /> Bulk Import
+                    </button>
+                    <button
+                        onClick={openAddModal}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-95 transition"
+                        style={{ backgroundColor: accent }}
+                    >
+                        <Plus size={16} /> Add Apparel Item
+                    </button>
+                </div>
             </div>
 
             {/* Filter Bar */}
@@ -402,40 +482,16 @@ const OwnerProducts = () => {
                         {/* Modal Body */}
                         <div className="p-6 overflow-y-auto space-y-5">
                             
-                            {/* Image Preset Picker */}
-                            <div>
-                                <label className={labelClass}>Select Fashion Photography Preset</label>
-                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
-                                    {IMAGE_PRESETS.map((preset) => (
-                                        <button
-                                            type="button"
-                                            key={preset.label}
-                                            onClick={() => {
-                                                setSelectedImage(preset.url);
-                                                setSelectedEmoji(preset.emoji);
-                                            }}
-                                            className={`relative rounded-2xl overflow-hidden aspect-square border-2 transition ${selectedImage === preset.url ? 'border-indigo-600 ring-2 ring-indigo-500/20 scale-105' : 'border-slate-200 hover:border-slate-300'}`}
-                                        >
-                                            <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                                            <span className="absolute bottom-1 right-1 text-sm bg-slate-900/80 px-1 rounded backdrop-blur">
-                                                {preset.emoji}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Or Custom Image URL */}
-                            <div>
-                                <label className={labelClass}>Custom Image URL (Optional)</label>
-                                <input
-                                    name="customImage"
-                                    defaultValue={selectedImage}
-                                    onChange={(e) => setSelectedImage(e.target.value)}
-                                    className={inputClass}
-                                    placeholder="https://images.unsplash.com/..."
-                                />
-                            </div>
+                            {/* Garment Image Upload & Auto-Compressor */}
+                            <ImageUploadInput
+                                value={selectedImage}
+                                onChange={(compressedDataUrl) => setSelectedImage(compressedDataUrl)}
+                                label="Garment Photograph / Catalog Image"
+                                presets={IMAGE_PRESETS}
+                                maxWidth={800}
+                                maxHeight={800}
+                                quality={0.65}
+                            />
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="sm:col-span-2">
@@ -585,6 +641,72 @@ const OwnerProducts = () => {
                                 style={{ backgroundColor: accent }}
                             >
                                 {modalProduct.id ? 'Update Product' : 'Add to Inventory'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Bulk Import CSV Modal */}
+            {isImportModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+                        onClick={() => setIsImportModalOpen(false)}
+                    />
+                    <form
+                        onSubmit={handleBatchImport}
+                        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 z-10 space-y-4 animate-in zoom-in-95 font-sans"
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <Upload size={16} />
+                                </span>
+                                <h3 className="font-extrabold text-base text-slate-900">Bulk Import Apparel Catalog</h3>
+                            </div>
+                            <button type="button" onClick={() => setIsImportModalOpen(false)} className="text-slate-400">✕</button>
+                        </div>
+
+                        <div className="space-y-3 text-xs">
+                            <p className="text-slate-600 leading-relaxed">
+                                Paste CSV data with format: <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[11px]">"Product Name", Category, Price, Stock</code>
+                            </p>
+
+                            <textarea
+                                rows={6}
+                                required
+                                value={importData}
+                                onChange={(e) => setImportData(e.target.value)}
+                                placeholder={`"Raw Hem Denim Jacket", Men, 149.00, 20\n"Silk Evening Wrap Dress", Dresses, 220.00, 15`}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:outline-none focus:bg-white"
+                            />
+
+                            <div className="flex items-center justify-between pt-1">
+                                <button
+                                    type="button"
+                                    onClick={loadSampleImport}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                >
+                                    <FileText size={13} /> Load Sample Fashion Dataset
+                                </button>
+                                <span className="text-[11px] text-slate-400">1 item per line</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-md hover:bg-slate-800"
+                            >
+                                Import Products to {shop.name}
                             </button>
                         </div>
                     </form>

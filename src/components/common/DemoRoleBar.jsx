@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Shield, Store, Globe, Sparkles, UserCheck, Clock,
-    ChevronDown, RotateCcw, Palette
+    ChevronDown, RotateCcw, Palette, Database
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import BackendSyncModal from './BackendSyncModal';
 
 const DemoRoleBar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { currentAuthUser, loginAs, shops, resetDemoData } = useStore();
+    const { currentAuthUser, loginAs, shops, resetDemoData, backendStatus } = useStore();
     const [openUserDropdown, setOpenUserDropdown] = useState(false);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
     const pendingShops = shops.filter((s) => s.status === 'Pending');
 
@@ -149,6 +151,19 @@ const DemoRoleBar = () => {
                     )}
                 </div>
 
+                {/* MySQL Backend Sync Status Button */}
+                <button
+                    onClick={() => setIsSyncModalOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition"
+                    title="Configure MySQL Backend & Sync Status"
+                >
+                    <Database size={13} className={backendStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'} />
+                    <span className="hidden md:inline text-[11px]">
+                        {backendStatus === 'connected' ? 'MySQL Synced' : 'MySQL Offline'}
+                    </span>
+                    <span className={`w-2 h-2 rounded-full ${backendStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                </button>
+
                 {/* Reset Demo Data Button */}
                 <button
                     onClick={resetDemoData}
@@ -158,6 +173,12 @@ const DemoRoleBar = () => {
                     <RotateCcw size={14} />
                 </button>
             </div>
+
+            {/* Backend Sync & cPanel Configuration Modal */}
+            <BackendSyncModal
+                isOpen={isSyncModalOpen}
+                onClose={() => setIsSyncModalOpen(false)}
+            />
         </aside>
     );
 };

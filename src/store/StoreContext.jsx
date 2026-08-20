@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StoreContext } from './storeDefinition';
 import {
     initialShops,
@@ -8,6 +8,7 @@ import {
     initialReviews
 } from './seed';
 import { formatCurrency } from '../utils/currency';
+import ApiService from '../services/api';
 
 const STORAGE_KEYS = {
     SHOPS: 'kaizer_shops_v3',
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
     SETTINGS: 'kaizer_settings_v3',
     ACTIVITIES: 'kaizer_activities_v3',
     AUTH_USER: 'kaizer_auth_user_v3',
+    API_URL: 'kaizer_custom_api_url',
 };
 
 let toastCounter = 1;
@@ -54,6 +56,12 @@ export const StoreProvider = ({ children }) => {
     const [currentAuthUser, setCurrentAuthUser] = useState(() =>
         getStored(STORAGE_KEYS.AUTH_USER, initialUsers[0]) // Default Super Admin
     );
+
+    // Backend Connection & Synchronization States
+    const [backendStatus, setBackendStatus] = useState('checking'); // 'checking' | 'connected' | 'offline'
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSyncedAt, setLastSyncedAt] = useState(null);
+    const [apiBaseUrl, setApiBaseUrlState] = useState(() => ApiService.getBaseUrl());
 
     const [settings, setSettings] = useState(() =>
         getStored(STORAGE_KEYS.SETTINGS, {
@@ -95,19 +103,113 @@ export const StoreProvider = ({ children }) => {
     const formatPrice = (usdAmount) => formatCurrency(usdAmount, activeCurrency);
 
     // Toast Manager
-    const dismissToast = (id) => {
+    const dismissToast = useCallback((id) => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
+    }, []);
 
-    const showToast = (message, type = 'info', duration = 3500) => {
+    const showToast = useCallback((message, type = 'info', duration = 3500) => {
         const id = `toast-${toastCounter++}`;
         setToasts((prev) => [...prev, { id, message, type }]);
         setTimeout(() => dismissToast(id), duration);
-    };
+    }, [dismissToast]);
 
     const logActivity = (text, type = 'general') => {
         const newAct = { id: `act-${toastCounter++}`, text, time: 'Just now', type };
         setActivities((prev) => [newAct, ...prev.slice(0, 30)]);
+    };
+
+    // -------------------------------------------------------------
+    // BACKEND HYDRATION & BIDIRECTIONAL SYNC ENGINE
+    // -------------------------------------------------------------
+    const syncWithBackend = useCallback(async (silent = false) => {
+        setIsSyncing(true);
+        try {
+            const health = await ApiService.checkHealth();
+            if (health.online) {
+                setBackendStatus('connected');
+
+                // 1. Fetch live shops from MySQL
+                const shopRes = await ApiService.getShops().catch(() => null);
+                if (shopRes && shopRes.status === 'success' && Array.isArray(shopRes.data) && shopRes.data.length > 0) {
+                    setShops((prev) => {
+                        const incomingIds = new Set(shopRes.data.map((s) => s.id));
+                        const localOnly = prev.filter((s) => !incomingIds.has(s.id));
+                        return [...shopRes.data, ...localOnly];
+                    });
+                }
+
+                // 2. Fetch live orders from MySQL
+                const orderRes = await ApiService.getOrders().catch(() => null);
+                if (orderRes && orderRes.status === 'success' && Array.isArray(orderRes.data) && orderRes.data.length > 0) {
+                    setOrders(orderRes.data);
+                }
+
+                // 3. Fetch live users
+                const userRes = await ApiService.getUsers().catch(() => null);
+                if (userRes && userRes.status === 'success' && Array.isArray(userRes.data) && userRes.data.length > 0) {
+                    setUsers(userRes.data);
+                }
+
+                setLastSyncedAt(new Date());
+                if (!silent) {
+                    showToast('Synchronized successfully with MySQL backend! 🟢', 'success');
+                }
+            } else {
+                setBackendStatus('offline');
+                if (!silent) {
+                    showToast('Backend offline or unreachable. Operating on high-speed local cache.', 'info');
+                }
+            }
+        } catch {
+            setBackendStatus('offline');
+            if (!silent) {
+                showToast('Backend offline or unreachable. Operating on high-speed local cache.', 'info');
+            }
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [showToast]);
+
+    // Automatic Sync on Initial Boot
+    useEffect(() => {
+        let isMounted = true;
+        const initializeBackend = async () => {
+            try {
+                const health = await ApiService.checkHealth();
+                if (isMounted) {
+                    if (health.online) {
+                        setBackendStatus('connected');
+                        const shopRes = await ApiService.getShops().catch(() => null);
+                        if (isMounted && shopRes?.status === 'success' && Array.isArray(shopRes.data) && shopRes.data.length > 0) {
+                            setShops((prev) => {
+                                const incomingIds = new Set(shopRes.data.map((s) => s.id));
+                                const localOnly = prev.filter((s) => !incomingIds.has(s.id));
+                                return [...shopRes.data, ...localOnly];
+                            });
+                        }
+                        const orderRes = await ApiService.getOrders().catch(() => null);
+                        if (isMounted && orderRes?.status === 'success' && Array.isArray(orderRes.data) && orderRes.data.length > 0) {
+                            setOrders(orderRes.data);
+                        }
+                        setLastSyncedAt(new Date());
+                    } else {
+                        setBackendStatus('offline');
+                    }
+                }
+            } catch {
+                if (isMounted) setBackendStatus('offline');
+            }
+        };
+        initializeBackend();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const setApiBaseUrl = (newUrl) => {
+        ApiService.setBaseUrl(newUrl);
+        setApiBaseUrlState(ApiService.getBaseUrl());
+        syncWithBackend(false);
     };
 
     // Auth & Role Switcher
@@ -211,6 +313,9 @@ export const StoreProvider = ({ children }) => {
             prev.map((u) => (u.shopId === shopId ? { ...u, status: 'Active' } : u))
         );
 
+        // Async sync with MySQL Backend
+        ApiService.updateShop(shopId, { status: 'Active' }).catch(() => {});
+
         const targetShop = shops.find((s) => s.id === shopId);
         logActivity(`Super Admin approved "${targetShop?.name || shopId}" merchant storefront`, 'approval');
         showToast(`Boutique "${targetShop?.name || shopId}" is now Approved & Live!`, 'success');
@@ -224,6 +329,10 @@ export const StoreProvider = ({ children }) => {
         setUsers((prev) =>
             prev.map((u) => (u.shopId === shopId ? { ...u, status: 'Suspended' } : u))
         );
+
+        // Async sync with MySQL Backend
+        ApiService.updateShop(shopId, { status: 'Suspended' }).catch(() => {});
+
         logActivity(`Super Admin suspended/rejected boutique ${shopId}: ${reason}`, 'warning');
         showToast(`Boutique status updated to Suspended`, 'info');
     };
@@ -233,6 +342,7 @@ export const StoreProvider = ({ children }) => {
         setShops((prev) =>
             prev.map((s) => (s.id === shopId ? { ...s, activeTheme: themeId } : s))
         );
+        ApiService.updateShop(shopId, { activeTheme: themeId }).catch(() => {});
         const targetShop = shops.find((s) => s.id === shopId);
         logActivity(`"${targetShop?.name || 'Shop'}" activated theme template: ${themeId}`, 'general');
         showToast(`Active Theme updated to: ${themeId}`, 'success');
@@ -270,6 +380,10 @@ export const StoreProvider = ({ children }) => {
             ...shopData,
         };
         setShops((prev) => [newShop, ...prev]);
+
+        // Async sync with MySQL Backend
+        ApiService.createShop({ ...newShop, ownerName: shopData.ownerName || 'Owner' }).catch(() => {});
+
         logActivity(`Created new boutique "${newShop.name}"`, 'shop');
         showToast(`Shop "${newShop.name}" provisioned successfully!`, 'success');
         return newShop;
@@ -277,12 +391,14 @@ export const StoreProvider = ({ children }) => {
 
     const updateShop = (id, patch) => {
         setShops((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+        ApiService.updateShop(id, patch).catch(() => {});
         showToast('Shop details updated', 'success');
     };
 
     const deleteShop = (id) => {
         const target = shops.find((s) => s.id === id);
         setShops((prev) => prev.filter((s) => s.id !== id));
+        ApiService.deleteShop(id).catch(() => {});
         logActivity(`Deleted boutique "${target?.name || id}"`, 'warning');
         showToast(`Deleted shop "${target?.name || id}"`, 'info');
     };
@@ -300,6 +416,7 @@ export const StoreProvider = ({ children }) => {
             products: [...(source.products || [])],
         };
         setShops((prev) => [newShop, ...prev]);
+        ApiService.createShop(newShop).catch(() => {});
         showToast(`Duplicated "${source.name}"`, 'success');
     };
 
@@ -324,6 +441,10 @@ export const StoreProvider = ({ children }) => {
                 return s;
             })
         );
+
+        // Async sync with MySQL Backend
+        ApiService.addProduct(shopId, newProduct).catch(() => {});
+
         logActivity(`Added apparel item "${newProduct.name}" to inventory`, 'product');
         showToast(`Item "${newProduct.name}" added to catalog`, 'success');
         return newProduct;
@@ -341,6 +462,7 @@ export const StoreProvider = ({ children }) => {
                 return s;
             })
         );
+        ApiService.updateProduct(productId, patch).catch(() => {});
         showToast('Product specifications updated', 'success');
     };
 
@@ -356,6 +478,7 @@ export const StoreProvider = ({ children }) => {
                 return s;
             })
         );
+        ApiService.deleteProduct(productId).catch(() => {});
         showToast('Product removed from catalog', 'info');
     };
 
@@ -377,6 +500,7 @@ export const StoreProvider = ({ children }) => {
                 return s;
             })
         );
+        ApiService.updateProduct(productId, { stockDelta: delta }).catch(() => {});
         showToast('Inventory stock level adjusted', 'info');
     };
 
@@ -429,6 +553,15 @@ export const StoreProvider = ({ children }) => {
             }
         });
 
+        // Async sync with MySQL Backend
+        ApiService.placeOrder({
+            shopId,
+            shopName: newOrder.shopName,
+            items,
+            customer: customerInfo,
+            discount,
+        }).catch(() => {});
+
         logActivity(`New order #${orderId} received from ${customerInfo.name} ($${total})`, 'order');
         showToast(`Order #${orderId} placed successfully!`, 'success');
         return newOrder;
@@ -449,8 +582,9 @@ export const StoreProvider = ({ children }) => {
                 return o;
             })
         );
-        logActivity(`Order #${orderId} updated to status "${status}"`, 'order');
-        showToast(`Order #${orderId} marked as ${status}`, 'info');
+        ApiService.updateOrderStatus(orderId, status).catch(() => {});
+        logActivity(`Order #${orderId} status transitioned to: ${status}`, 'order');
+        showToast(`Order #${orderId} updated to ${status}`, 'info');
     };
 
     const getShopOrders = (shopId) => {
@@ -606,6 +740,13 @@ export const StoreProvider = ({ children }) => {
                 isWishlisted,
                 setSettings,
                 resetDemoData,
+                backendStatus,
+                isSyncing,
+                lastSyncedAt,
+                apiBaseUrl,
+                setApiBaseUrl,
+                syncWithBackend,
+                ApiService,
             }}
         >
             {children}

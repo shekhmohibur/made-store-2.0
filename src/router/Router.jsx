@@ -25,6 +25,7 @@ import OwnerDashboard from '../models/owner/pages/OwnerDashboard';
 import ThemeStudio from '../models/owner/pages/ThemeStudio';
 import OwnerProducts from '../models/owner/pages/OwnerProducts';
 import OwnerOrders from '../models/owner/pages/OwnerOrders';
+import OwnerCustomers from '../models/owner/pages/OwnerCustomers';
 import OwnerDiscounts from '../models/owner/pages/OwnerDiscounts';
 import OwnerSettings from '../models/owner/pages/OwnerSettings';
 
@@ -70,6 +71,7 @@ const Router = createBrowserRouter([
             { path: 'themes', Component: ThemeStudio },
             { path: 'products', Component: OwnerProducts },
             { path: 'orders', Component: OwnerOrders },
+            { path: 'customers', Component: OwnerCustomers },
             { path: 'discounts', Component: OwnerDiscounts },
             { path: 'settings', Component: OwnerSettings },
         ],
@@ -85,6 +87,7 @@ const Router = createBrowserRouter([
             { path: 'themes', Component: ThemeStudio },
             { path: 'products', Component: OwnerProducts },
             { path: 'orders', Component: OwnerOrders },
+            { path: 'customers', Component: OwnerCustomers },
             { path: 'discounts', Component: OwnerDiscounts },
             { path: 'settings', Component: OwnerSettings },
         ],
