@@ -1,116 +1,173 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Store, SquarePlus, Users, Settings, LogOut, X, UserCog, ShoppingBag } from 'lucide-react';
+import {
+    LayoutDashboard, Store, PlusCircle, Users, Settings,
+    X, Clock
+} from 'lucide-react';
+import { useStore } from '../../../store/useStore';
 
-const Sidebar = ({ isCollapsed, isMobileOpen, setIsMobileOpen }) => {
+const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
+    const { shops, users } = useStore();
 
-    const navGroups = [
-        { section: 'Overview', items: [
-            { name: 'Dashboard', icon: <Home size={20} />, path: '/panel', end: true },
-        ] },
-        { section: 'Management', items: [
-            { name: 'Clothing Shops', icon: <Store size={20} />, path: '/panel/shops' },
-            { name: 'Create New Shop', icon: <SquarePlus size={20} />, path: '/panel/create-shop' },
-            { name: 'Users / Owners', icon: <Users size={20} />, path: '/panel/users' },
-        ] },
-        { section: 'System', items: [
-            { name: 'Settings', icon: <Settings size={20} />, path: '/panel/settings' },
-        ] },
-        { section: 'Live Site', items: [
-            { name: 'Owner Panel', icon: <UserCog size={20} />, path: '/panel/owner' },
-            { name: 'Dress Shop Page', icon: <ShoppingBag size={20} />, path: '/dress-shop' },
-        ] },
+    const pendingCount = shops.filter((s) => s.status === 'Pending').length;
+
+    const navItems = [
+        { to: '/panel', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        {
+            to: '/panel/approvals',
+            label: 'Approvals Queue',
+            icon: Clock,
+            badge: pendingCount > 0 ? String(pendingCount) : null,
+            badgeColor: 'bg-amber-500 text-slate-950 font-black',
+        },
+        {
+            to: '/panel/shops',
+            label: 'Clothing Shops',
+            icon: Store,
+            badge: String(shops.length),
+        },
+        { to: '/panel/create-shop', label: 'Provision Boutique', icon: PlusCircle },
+        {
+            to: '/panel/users',
+            label: 'Users & Roles',
+            icon: Users,
+            badge: String(users.length),
+        },
+        { to: '/panel/settings', label: 'Platform Settings', icon: Settings },
     ];
 
-    const closeMobile = () => {
-        if (window.innerWidth < 1024) setIsMobileOpen(false);
-    };
+    const linkBase =
+        'flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all group relative';
+    const linkActive =
+        'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25';
+    const linkInactive =
+        'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80';
 
     return (
-        <aside
-            className={`
-                fixed left-0 top-16 bottom-0 z-40 flex flex-col
-                w-80 max-w-[90vw] lg:max-w-none
-                bg-gradient-to-b from-[#241f5c] to-[#2d296b] text-white
-                shadow-2xl transition-all duration-300 ease-in-out
-                ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
-                ${isCollapsed ? 'lg:w-[4.5rem]' : 'lg:w-72'}
-            `}
-        >
-            <div className="flex items-center justify-between h-14 px-4 border-b border-white/10 lg:hidden shrink-0">
-                <span className="font-semibold tracking-wide">Navigation</span>
-                <button onClick={closeMobile} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80" title="Close menu">
-                    <X size={18} />
-                </button>
-            </div>
+        <>
+            {/* Mobile Backdrop */}
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={onCloseMobile}
+                />
+            )}
 
-            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-                {navGroups.map((group) => (
-                    <div key={group.section}>
-                        {!isCollapsed ? (
-                            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-white/40">{group.section}</p>
-                        ) : (
-                            <div className="mx-3 mb-2 h-px bg-white/10" />
+            {/* Sidebar Container */}
+            <aside
+                className={`
+                    fixed top-10 bottom-0 left-0 z-40
+                    bg-slate-900 border-r border-slate-800 text-slate-200
+                    flex flex-col justify-between transition-all duration-300 ease-in-out
+                    ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    ${isCollapsed ? 'w-20' : 'w-64'}
+                `}
+            >
+                {/* Top Brand Header */}
+                <div>
+                    <div className="h-16 px-5 border-b border-slate-800 flex items-center justify-between">
+                        <NavLink to="/panel" className="flex items-center gap-3 group">
+                            <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform shrink-0">
+                                K
+                            </span>
+                            {!isCollapsed && (
+                                <div className="leading-tight overflow-hidden">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-extrabold text-sm tracking-tight text-white">Kaizer Admin</span>
+                                        <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-md border border-indigo-500/30">
+                                            v2.0
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 font-medium">Clothing SaaS Engine</p>
+                                </div>
+                            )}
+                        </NavLink>
+
+                        {/* Mobile close */}
+                        <button
+                            onClick={onCloseMobile}
+                            className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    {/* Navigation Items */}
+                    <nav className="p-3.5 space-y-1.5">
+                        {!isCollapsed && (
+                            <p className="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                SaaS Management
+                            </p>
                         )}
-                        <ul className="space-y-1">
-                            {group.items.map((item) => (
-                                <li key={item.name}>
-                                    <NavLink
-                                        to={item.path}
-                                        end={item.end}
-                                        onClick={closeMobile}
-                                        title={isCollapsed ? item.name : ''}
-                                        className={({ isActive }) => `
-                                            relative flex items-center gap-3 px-3 py-2.5 rounded-lg
-                                            text-sm font-medium transition-colors duration-150
-                                            ${isCollapsed ? 'lg:justify-center' : 'lg:justify-start'}
-                                            ${isActive
-                                                ? 'bg-gradient-to-r from-purple-500/30 to-indigo-500/20 text-white'
-                                                : 'text-white/60 hover:bg-white/5 hover:text-white'}
-                                        `}
-                                    >
-                                        {({ isActive }) => (
-                                            <>
-                                                {isActive && (
-                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-purple-400" />
-                                                )}
-                                                <span className="shrink-0">{item.icon}</span>
-                                                {!isCollapsed && <span className="truncate">{item.name}</span>}
-                                            </>
-                                        )}
-                                    </NavLink>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </nav>
-
-            <div className="border-t border-white/10 p-3 space-y-2 shrink-0">
-                <div className={`
-                    flex items-center gap-3 px-2 py-1 overflow-hidden
-                    ${isCollapsed ? 'lg:justify-center' : 'lg:justify-start'}
-                `}>
-                    <div className="w-9 h-9 rounded-full bg-white/10 ring-2 ring-white/20 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                        SA
-                    </div>
-                    <div className="leading-tight min-w-0 ${isCollapsed ? 'lg:hidden' : 'block'}">
-                        <p className="text-sm font-semibold text-white truncate">Super Admin</p>
-                        <p className="text-xs text-white/50 truncate">admin@kaizer.com</p>
-                    </div>
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    end={item.end}
+                                    onClick={onCloseMobile}
+                                    className={({ isActive }) =>
+                                        `${linkBase} ${isActive ? linkActive : linkInactive} ${isCollapsed ? 'justify-center px-0' : ''}`
+                                    }
+                                    title={isCollapsed ? item.label : undefined}
+                                >
+                                    <Icon size={18} className="shrink-0 group-hover:scale-110 transition-transform" />
+                                    {!isCollapsed && (
+                                        <>
+                                            <span className="flex-1 truncate">{item.label}</span>
+                                            {item.badge && (
+                                                <span
+                                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                        item.badgeColor || 'bg-slate-800 text-slate-300'
+                                                    }`}
+                                                >
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                </NavLink>
+                            );
+                        })}
+                    </nav>
                 </div>
-                <button
-                    title="Logout"
-                    className={`
-                        flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/70
-                        ${isCollapsed ? 'lg:justify-center' : 'lg:justify-start'}
-                        hover:bg-red-500/10 hover:text-red-400
-                    `}
-                >
-                    <LogOut size={20} className="shrink-0" />
-                    {!isCollapsed && <span className="font-medium">Logout</span>}
-                </button>
-            </div>
-        </aside>
+
+                {/* Bottom Quick Tenant Switcher */}
+                <div className="p-3.5 border-t border-slate-800 space-y-2">
+                    {!isCollapsed ? (
+                        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-400">Active Tenants</span>
+                                <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/50">
+                                    {shops.filter((s) => s.status === 'Active').length} Live
+                                </span>
+                            </div>
+
+                            <div className="space-y-1">
+                                {shops.slice(0, 3).map((s) => (
+                                    <NavLink
+                                        key={s.id}
+                                        to={`/shop/${s.slug}`}
+                                        target="_blank"
+                                        className="flex items-center justify-between text-xs p-1.5 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition group"
+                                    >
+                                        <span className="truncate flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.accent }} />
+                                            {s.name}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 group-hover:text-indigo-400">↗</span>
+                                    </NavLink>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center">
+                            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Platform Operational" />
+                        </div>
+                    )}
+                </div>
+            </aside>
+        </>
     );
 };
 

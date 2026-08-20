@@ -1,12 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Menu, X, Search, Bell, ChevronDown, UserCog, ScrollText, LogOut, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Menu, X, Search, Bell, ChevronDown, LogOut, Settings,
+    PanelLeftClose, PanelLeftOpen, Store, ShoppingBag, RotateCcw,
+    CheckCheck
+} from 'lucide-react';
+import { useStore } from '../../../store/useStore';
 
 const Navbar = ({ onToggleMobile, isMobileOpen, isCollapsed, onToggleCollapse }) => {
+    const { setIsGlobalSearchOpen, activities, shops, resetDemoData, showToast } = useStore();
     const [profileOpen, setProfileOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
+    const [readNotifs, setReadNotifs] = useState(new Set());
     const profileRef = useRef(null);
     const notifRef = useRef(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -17,128 +26,262 @@ const Navbar = ({ onToggleMobile, isMobileOpen, isCollapsed, onToggleCollapse })
         return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
+    const unreadCount = activities.filter((a) => !readNotifs.has(a.id)).length;
+
+    const markAllRead = () => {
+        const allIds = new Set(activities.map((a) => a.id));
+        setReadNotifs(allIds);
+        showToast('All notifications marked as read', 'info');
+    };
+
     return (
         <motion.header
-            initial={{ y: -60, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#2d296b] text-white shadow-lg"
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="sticky top-10 z-30 h-16 w-full bg-slate-900 text-white shadow-md border-b border-slate-800"
         >
-            <div className="h-full w-full flex items-center gap-3 px-4 sm:px-6">
-
-                <button
-                    onClick={onToggleMobile}
-                    className="lg:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
-                    title={isMobileOpen ? 'Close menu' : 'Open menu'}
-                >
-                    {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
-                </button>
-
+            <div className="h-full w-full flex items-center justify-between gap-3 px-4 sm:px-6">
+                
+                {/* Left section: Mobile toggle, Collapse, Title */}
                 <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shrink-0">
-                        KS
-                    </span>
-                    <span className="hidden sm:block font-bold text-lg tracking-wide leading-tight">
-                        Kaizer <span className="text-white/60 text-xs uppercase font-normal align-baseline">Admin</span>
-                    </span>
+                    <button
+                        onClick={onToggleMobile}
+                        className="lg:hidden p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition active:scale-95"
+                        title={isMobileOpen ? 'Close menu' : 'Open menu'}
+                    >
+                        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
+
+                    {/* Desktop sidebar collapse toggle */}
+                    <button
+                        onClick={onToggleCollapse}
+                        className="hidden lg:inline-flex p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition active:scale-95 border border-white/10"
+                        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                        {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                    </button>
+
+                    <div className="hidden sm:block leading-tight">
+                        <span className="font-extrabold text-sm tracking-tight text-white flex items-center gap-2">
+                            Super Admin Console
+                            <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-400/30">
+                                Cloud
+                            </span>
+                        </span>
+                    </div>
                 </div>
 
-                {/* Desktop sidebar collapse toggle */}
-                <button
-                    onClick={onToggleCollapse}
-                    className="hidden lg:inline-flex p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white"
-                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                >
-                    {isCollapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
-                </button>
-
-                <div className="hidden md:flex flex-1 items-center mx-auto max-w-md relative">
-                    <Search size={16} className="absolute left-3 text-white/50" />
-                    <input
-                        type="search"
-                        placeholder="Search shops, owners, settings..."
-                        className="w-full pl-9 pr-4 py-2 text-sm bg-white/10 border border-white/15 rounded-lg focus:outline-none focus:border-white/50 focus:bg-white/15 placeholder-white/50"
-                    />
+                {/* Center search button (triggers Global Command Search) */}
+                <div className="hidden md:flex flex-1 max-w-md mx-4">
+                    <button
+                        type="button"
+                        onClick={() => setIsGlobalSearchOpen(true)}
+                        className="w-full flex items-center justify-between px-3.5 py-2 text-xs bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl text-slate-300 transition group shadow-inner"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Search size={14} className="text-indigo-300 group-hover:text-white transition" />
+                            <span className="text-slate-300 group-hover:text-white">Search boutiques, products, users...</span>
+                        </div>
+                        <kbd className="hidden lg:inline-block px-2 py-0.5 text-[10px] font-semibold bg-white/15 text-slate-200 rounded border border-white/20 font-mono">
+                            ⌘K
+                        </kbd>
+                    </button>
                 </div>
 
-                <div className="flex items-center gap-2 ml-auto">
+                {/* Right actions */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                    
+                    {/* Quick Store switcher shortcut */}
+                    <div className="hidden xl:flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1">
+                        <Store size={14} className="text-indigo-400" />
+                        <span className="text-xs text-slate-300 font-medium">Store:</span>
+                        <select
+                            onChange={(e) => { if (e.target.value) navigate(`/shop/${e.target.value}`); }}
+                            defaultValue=""
+                            className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-2"
+                        >
+                            <option value="" disabled className="text-slate-900">Select live store...</option>
+                            {shops.map((s) => (
+                                <option key={s.id} value={s.slug} className="text-slate-900">{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Search icon for mobile */}
+                    <button
+                        onClick={() => setIsGlobalSearchOpen(true)}
+                        className="md:hidden p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white"
+                        title="Search"
+                    >
+                        <Search size={18} />
+                    </button>
+
+                    {/* Notifications dropdown */}
                     <div className="relative" ref={notifRef}>
                         <button
                             onClick={() => setNotifOpen(!notifOpen)}
-                            className="relative p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+                            className="relative p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition active:scale-95"
                             title="Notifications"
                         >
-                            <Bell size={19} />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#2d296b]" />
+                            <Bell size={18} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-slate-900 animate-pulse">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
-                        {notifOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="absolute right-0 mt-2 w-80 origin-top-right rounded-xl bg-white text-base-content shadow-xl ring-1 ring-black/5 z-[100]"
-                            >
-                                <div className="px-4 py-3 border-b border-gray-100">
-                                    <p className="font-semibold text-gray-800">Notifications</p>
-                                </div>
-                                <div className="p-2 space-y-1">
-                                    {[
-                                        { t: 'New shop approved', s: '2 min ago' },
-                                        { t: 'Payment received', s: '1 hour ago' },
-                                        { t: 'User signup', s: '3 hours ago' },
-                                    ].map((n, i) => (
-                                        <div key={i} className="px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                                            <p className="text-sm text-gray-800">{n.t}</p>
-                                            <p className="text-xs text-gray-400">{n.s}</p>
+
+                        <AnimatePresence>
+                            {notifOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 mt-2 w-84 sm:w-96 origin-top-right rounded-2xl bg-white text-slate-800 shadow-2xl ring-1 ring-black/10 z-[100] overflow-hidden"
+                                >
+                                    <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-slate-800 text-sm">Platform Feed</p>
+                                            <span className="text-[11px] font-semibold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                                                {activities.length} total
+                                            </span>
                                         </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
+                                        {unreadCount > 0 && (
+                                            <button
+                                                onClick={markAllRead}
+                                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                            >
+                                                <CheckCheck size={14} /> Mark all read
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                                        {activities.length === 0 ? (
+                                            <div className="p-8 text-center text-slate-400 text-sm">
+                                                No new notifications
+                                            </div>
+                                        ) : (
+                                            activities.map((act) => (
+                                                <div
+                                                    key={act.id}
+                                                    className={`p-3.5 hover:bg-slate-50 transition cursor-pointer flex items-start gap-3 ${!readNotifs.has(act.id) ? 'bg-indigo-50/40' : ''}`}
+                                                >
+                                                    <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${!readNotifs.has(act.id) ? 'bg-indigo-600 ring-4 ring-indigo-100' : 'bg-slate-300'}`} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-medium text-slate-800 leading-snug">{act.text}</p>
+                                                        <p className="text-[10px] text-slate-400 mt-1">{act.time}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div className="p-2.5 border-t border-slate-100 bg-slate-50 text-center">
+                                        <Link
+                                            to="/panel"
+                                            onClick={() => setNotifOpen(false)}
+                                            className="text-xs font-semibold text-indigo-600 hover:underline"
+                                        >
+                                            View full analytics dashboard →
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
+                    {/* Super Admin profile dropdown */}
                     <div className="relative" ref={profileRef}>
                         <button
                             onClick={() => setProfileOpen(!profileOpen)}
-                            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white/10 hover:bg-white/20"
+                            className="flex items-center gap-2 p-1.5 rounded-xl bg-white/10 hover:bg-white/20 transition border border-white/10 active:scale-95"
                         >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/20">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow">
                                 SA
                             </div>
-                            <ChevronDown size={16} className="hidden sm:block text-white/70" />
+                            <span className="hidden sm:inline text-xs font-semibold text-slate-200">Super Admin</span>
+                            <ChevronDown size={14} className="text-slate-400" />
                         </button>
-                        {profileOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-white text-base-content shadow-xl ring-1 ring-black/5 z-[100]"
-                            >
-                                <div className="px-4 py-3 border-b border-gray-100">
-                                    <p className="font-semibold text-gray-800 text-sm">Super Admin</p>
-                                    <p className="text-xs text-gray-400">admin@kaizer.com</p>
-                                </div>
-                                <div className="p-1.5">
-                                    {[
-                                        { icon: <UserCog size={16} />, label: 'Profile Settings' },
-                                        { icon: <ScrollText size={16} />, label: 'System Logs' },
-                                        { icon: <Settings size={16} />, label: 'Preferences' },
-                                    ].map((item, i) => (
-                                        <button
-                                            key={i}
-                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+
+                        <AnimatePresence>
+                            {profileOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 mt-2 w-64 origin-top-right rounded-2xl bg-white text-slate-800 shadow-2xl ring-1 ring-black/10 z-[100] overflow-hidden"
+                                >
+                                    <div className="p-4 bg-gradient-to-br from-indigo-50 to-slate-50 border-b border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center shadow">
+                                                SA
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-slate-800 text-sm truncate">Super Admin</p>
+                                                <p className="text-xs text-slate-500 truncate">admin@kaizer.com</p>
+                                                <span className="inline-block mt-1 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                                    System Administrator
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-2 space-y-1">
+                                        <Link
+                                            to="/panel/owner"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                                         >
-                                            {item.icon}
-                                            {item.label}
+                                            <ShoppingBag size={15} className="text-indigo-600" />
+                                            Switch to Owner Panel
+                                        </Link>
+                                        <Link
+                                            to="/dress-shop"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
+                                        >
+                                            <Store size={15} className="text-pink-600" />
+                                            Visit Viral Dress Shop
+                                        </Link>
+                                        <Link
+                                            to="/panel/settings"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
+                                        >
+                                            <Settings size={15} className="text-slate-500" />
+                                            Platform Settings
+                                        </Link>
+                                        <button
+                                            onClick={() => {
+                                                resetDemoData();
+                                                setProfileOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-amber-700 hover:bg-amber-50 transition text-left"
+                                        >
+                                            <RotateCcw size={15} />
+                                            Reset Demo Store Data
                                         </button>
-                                    ))}
-                                </div>
-                                <div className="border-t border-gray-100 p-1.5">
-                                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">
-                                        <LogOut size={16} />
-                                        Logout
-                                    </button>
-                                </div>
-                            </motion.div>
-                        )}
+                                    </div>
+
+                                    <div className="border-t border-slate-100 p-2">
+                                        <button
+                                            onClick={() => {
+                                                showToast('Logged out successfully', 'info');
+                                                setProfileOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                                        >
+                                            <LogOut size={15} />
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

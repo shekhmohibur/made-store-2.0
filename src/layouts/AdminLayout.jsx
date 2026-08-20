@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '../models/admin/common/Navbar';
 import Sidebar from '../models/admin/common/Sidebar';
 import Breadcrumbs from '../models/admin/common/Breadcrumbs';
+import ToastContainer from '../components/common/ToastContainer';
+import GlobalSearchModal from '../components/common/GlobalSearchModal';
+import DemoRoleBar from '../components/common/DemoRoleBar';
 import { findPageByPath } from '../router/routes';
 
 const AdminLayout = () => {
@@ -11,59 +14,54 @@ const AdminLayout = () => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const location = useLocation();
 
-    // Update the document title to reflect the active route.
+    // Update document title
     useEffect(() => {
         const page = findPageByPath(location.pathname);
-        document.title = `${page ? page.label : 'Admin'} · Kaizer Admin`;
+        document.title = `${page ? page.label : 'Super Admin'} · Kaizer Commerce`;
     }, [location.pathname]);
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <Navbar
-                onToggleMobile={() => setIsMobileOpen((v) => !v)}
-                isMobileOpen={isMobileOpen}
-                isCollapsed={isCollapsed}
-                onToggleCollapse={() => setIsCollapsed((v) => !v)}
-            />
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+            <DemoRoleBar />
+            <GlobalSearchModal />
+            <ToastContainer />
 
+            {/* Left Fixed Sidebar Pillar */}
             <Sidebar
                 isCollapsed={isCollapsed}
                 isMobileOpen={isMobileOpen}
-                setIsMobileOpen={setIsMobileOpen}
+                onCloseMobile={() => setIsMobileOpen(false)}
             />
 
-            {/* Scroll lock + backdrop when mobile drawer is open */}
-            {isMobileOpen && (
-                <div
-                    onClick={() => setIsMobileOpen(false)}
-                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 lg:hidden"
+            {/* Right Main Content Container (offset by sidebar width) */}
+            <div className={`transition-all duration-300 flex flex-col min-h-[calc(100vh-2.5rem)] ${isCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+                
+                {/* Sticky Navbar at top of main content */}
+                <Navbar
+                    onToggleMobile={() => setIsMobileOpen((v) => !v)}
+                    isMobileOpen={isMobileOpen}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={() => setIsCollapsed((v) => !v)}
                 />
-            )}
 
-            {/* Main content — offset under navbar and beside sidebar */}
-            <main
-                className={`
-                    min-h-screen pt-16 transition-[padding] duration-300 ease-in-out
-                    ${isCollapsed ? 'lg:pl-18' : 'lg:pl-72'}
-                `}
-            >
-                <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+                {/* Page Content */}
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
                     <Breadcrumbs />
 
-                    {/* Route-keyed transition so each page reflects its own view */}
+                    {/* Route transition */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}
-                            initial={{ opacity: 0, y: 12 }}
+                            initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -12 }}
-                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
                         >
                             <Outlet />
                         </motion.div>
                     </AnimatePresence>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 };

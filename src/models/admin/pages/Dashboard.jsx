@@ -1,142 +1,366 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-    Store, Users as UsersIcon, DollarSign, TrendingUp, Plus, Activity,
-    ShoppingCart, CheckCircle2, XCircle,
+    Store, ShoppingCart, DollarSign, TrendingUp, Plus,
+    Package, Sparkles, ChevronRight, Activity
 } from 'lucide-react';
+import { useStore } from '../../../store/useStore';
 
 const Dashboard = () => {
+    const { shops, orders, activities, showToast } = useStore();
+    const [timeframe, setTimeframe] = useState('30D');
+    const [chartMetric, setChartMetric] = useState('revenue');
+    const [hoveredBar, setHoveredBar] = useState(null);
+
+    // Calculate real dynamic platform metrics
+    const totalShops = shops.length;
+    const totalProducts = shops.reduce((acc, s) => acc + (s.products?.length || 0), 0);
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+    const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0.00';
+
     const stats = [
-        { label: 'Total Shops', value: '248', delta: '+12.5%', icon: <Store size={20} />, color: 'from-purple-500 to-indigo-600' },
-        { label: 'Active Users', value: '1,024', delta: '+8.2%', icon: <UsersIcon size={20} />, color: 'from-blue-500 to-cyan-600' },
-        { label: 'Monthly Revenue', value: '$86,420', delta: '+15.4%', icon: <DollarSign size={20} />, color: 'from-emerald-500 to-teal-600' },
-        { label: 'Conversion Rate', value: '3.6%', delta: '+0.8%', icon: <TrendingUp size={20} />, color: 'from-amber-500 to-orange-600' },
+        {
+            label: 'Total Platform Revenue',
+            value: `$${totalRevenue.toLocaleString()}`,
+            delta: '+18.4%',
+            icon: <DollarSign size={22} />,
+            color: 'from-emerald-500 to-teal-600',
+            sub: 'Across all tenant shops',
+        },
+        {
+            label: 'Active Clothing Shops',
+            value: totalShops,
+            delta: `+${totalShops}`,
+            icon: <Store size={22} />,
+            color: 'from-indigo-500 to-purple-600',
+            sub: 'SaaS multi-tenant boutiques',
+        },
+        {
+            label: 'Total Orders Processed',
+            value: totalOrders,
+            delta: '+12.1%',
+            icon: <ShoppingCart size={22} />,
+            color: 'from-blue-500 to-cyan-600',
+            sub: 'Average $ ' + avgOrderValue + ' / order',
+        },
+        {
+            label: 'Catalog Items Listed',
+            value: totalProducts,
+            delta: '+9.5%',
+            icon: <Package size={22} />,
+            color: 'from-amber-500 to-orange-600',
+            sub: 'Fashion & apparel inventory',
+        },
     ];
 
-    const orders = [
-        { id: '#ORD-2109', shop: 'Urban Threads', customer: 'Amina Yusuf', amount: '$240.00', status: 'Completed', date: 'Aug 18' },
-        { id: '#ORD-2110', shop: 'Street Vogue', customer: 'Daniel Okafor', amount: '$95.50', status: 'Pending', date: 'Aug 18' },
-        { id: '#ORD-2111', shop: 'Linen & Co', customer: 'Grace Mensah', amount: '$312.00', status: 'Completed', date: 'Aug 17' },
-        { id: '#ORD-2112', shop: 'Heritage Wear', customer: 'Tunde Bakare', amount: '$74.99', status: 'Refunded', date: 'Aug 17' },
-        { id: '#ORD-2113', shop: 'Urban Threads', customer: 'Blessing Ade', amount: '$188.40', status: 'Completed', date: 'Aug 16' },
-    ];
+    // Dynamic Mock Data for Chart based on timeframe
+    const chartData = {
+        '7D': [
+            { label: 'Mon', revenue: 420, orders: 4 },
+            { label: 'Tue', revenue: 780, orders: 7 },
+            { label: 'Wed', revenue: 610, orders: 5 },
+            { label: 'Thu', revenue: 950, orders: 9 },
+            { label: 'Fri', revenue: 1240, orders: 12 },
+            { label: 'Sat', revenue: 1680, orders: 15 },
+            { label: 'Sun', revenue: 1420, orders: 13 },
+        ],
+        '30D': [
+            { label: 'Wk 1', revenue: 3400, orders: 32 },
+            { label: 'Wk 2', revenue: 4800, orders: 45 },
+            { label: 'Wk 3', revenue: 6200, orders: 58 },
+            { label: 'Wk 4', revenue: 7900, orders: 71 },
+        ],
+        '12M': [
+            { label: 'Jan', revenue: 12400, orders: 110 },
+            { label: 'Feb', revenue: 15800, orders: 140 },
+            { label: 'Mar', revenue: 18200, orders: 165 },
+            { label: 'Apr', revenue: 21900, orders: 190 },
+            { label: 'May', revenue: 26400, orders: 230 },
+            { label: 'Jun', revenue: 31000, orders: 280 },
+            { label: 'Jul', revenue: 38500, orders: 340 },
+            { label: 'Aug', revenue: 45200, orders: 410 },
+        ],
+    }[timeframe];
+
+    const maxVal = Math.max(...chartData.map((d) => (chartMetric === 'revenue' ? d.revenue : d.orders))) || 1;
+
+    // Calculate shop leaderboard
+    const shopLeaderboard = shops.map((s) => {
+        const shopOrders = orders.filter((o) => o.shopId === s.id);
+        const shopRev = shopOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        return {
+            ...s,
+            orderCount: shopOrders.length,
+            revenue: shopRev,
+        };
+    }).sort((a, b) => b.revenue - a.revenue);
 
     return (
-        <>
-            {/* Page header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-                    <p className="text-sm text-gray-500">Welcome back, Super Admin 👋 Here's what's happening today.</p>
+        <div className="space-y-6">
+            
+            {/* Header with Welcome banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold backdrop-blur-md mb-2 border border-white/10">
+                        <Sparkles size={13} /> Platform Intelligence Center
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome back, Super Admin 👋</h1>
+                    <p className="text-sm text-indigo-200 mt-1 max-w-xl">
+                        Here is the live performance overview across your {totalShops} boutique tenants, active inventory, and customer orders.
+                    </p>
                 </div>
-                <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow hover:opacity-95">
-                    <Plus size={18} /> New Shop
-                </button>
+                <div className="flex items-center gap-3 relative z-10">
+                    <Link
+                        to="/panel/create-shop"
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-indigo-900 font-bold text-sm shadow-lg hover:bg-indigo-50 active:scale-95 transition"
+                    >
+                        <Plus size={18} /> Provision New Shop
+                    </Link>
+                </div>
+                {/* Subtle background glow circle */}
+                <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
             </div>
 
-            {/* Stat cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            {/* Metric KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
                 {stats.map((s, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow transition-shadow">
+                    <div
+                        key={i}
+                        className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all group"
+                    >
                         <div className="flex items-center justify-between">
-                            <span className={`w-11 h-11 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white shadow`}>
+                            <span className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}>
                                 {s.icon}
                             </span>
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                <TrendingUp size={12} /> {s.delta}
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                                <TrendingUp size={13} /> {s.delta}
                             </span>
                         </div>
-                        <p className="mt-4 text-2xl font-bold text-gray-800">{s.value}</p>
-                        <p className="text-sm text-gray-500">{s.label}</p>
+                        <div className="mt-4">
+                            <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">{s.value}</p>
+                            <p className="text-sm font-semibold text-slate-600 mt-0.5">{s.label}</p>
+                            <p className="text-xs text-slate-400 mt-1">{s.sub}</p>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-    {/* Revenue Chart */}
-    <div className="xl:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">Revenue Overview</h3>
-            <div className="flex items-center gap-2 text-xs">
-                <button className="px-3 py-1 rounded-md bg-purple-600 text-white">7 Days</button>
-                <button className="px-3 py-1 rounded-md text-gray-500 hover:bg-gray-100">30 Days</button>
-                <button className="px-3 py-1 rounded-md text-gray-500 hover:bg-gray-100">12 Months</button>
-            </div>
-        </div>
-        <div className="flex items-end gap-1.5 h-56">
-            {[45, 60, 38, 75, 52, 88, 66, 95, 72, 84, 58, 100].map((h, i) => (
-                <div key={i} className="flex-1 flex items-end rounded-t-md bg-gradient-to-t from-purple-500 to-indigo-400 hover:from-purple-600 transition-all" style={{ height: `${h}%` }} />
-            ))}
-        </div>
-        <div className="flex justify-between mt-2 text-[10px] text-gray-400">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].concat(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']).map((d, i) => (
-                <span key={i}>{d}</span>
-            ))}
-        </div>
-    </div>
+            {/* Interactive Analytics Chart & Activity Feed */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                
+                {/* Revenue Chart Visualizer */}
+                <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-lg">Platform Growth & Revenue</h3>
+                            <p className="text-xs text-slate-500">Live multi-tenant transaction telemetry</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="bg-slate-100 p-1 rounded-xl flex gap-1 text-xs font-semibold">
+                                <button
+                                    onClick={() => setChartMetric('revenue')}
+                                    className={`px-3 py-1.5 rounded-lg transition ${chartMetric === 'revenue' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                    Revenue ($)
+                                </button>
+                                <button
+                                    onClick={() => setChartMetric('orders')}
+                                    className={`px-3 py-1.5 rounded-lg transition ${chartMetric === 'orders' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                    Orders
+                                </button>
+                            </div>
+                            <div className="bg-slate-100 p-1 rounded-xl flex gap-1 text-xs font-semibold">
+                                {['7D', '30D', '12M'].map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setTimeframe(t)}
+                                        className={`px-2.5 py-1.5 rounded-lg transition ${timeframe === t ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
-    {/* Activity */}
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h3 className="font-semibold text-gray-800 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-            {[
-                { icon: <ShoppingCart size={16} />, c: 'bg-purple-100 text-purple-600', t: 'New order placed', s: '2 min ago' },
-                { icon: <CheckCircle2 size={16} />, c: 'bg-emerald-100 text-emerald-600', t: 'Shop approved', s: '35 min ago' },
-                { icon: <UsersIcon size={16} />, c: 'bg-blue-100 text-blue-600', t: 'New user registered', s: '1 hr ago' },
-                { icon: <XCircle size={16} />, c: 'bg-red-100 text-red-600', t: 'Payment declined', s: '3 hrs ago' },
-                { icon: <Activity size={16} />, c: 'bg-amber-100 text-amber-600', t: 'System backup', s: '5 hrs ago' },
-            ].map((a, i) => (
-                <div key={i} className="flex items-center gap-3">
-                    <span className={`w-9 h-9 rounded-lg ${a.c} flex items-center justify-center shrink-0`}>{a.icon}</span>
-                    <div className="min-w-0">
-                        <p className="text-sm text-gray-700 truncate">{a.t}</p>
-                        <p className="text-xs text-gray-400">{a.s}</p>
+                    {/* Chart Bars */}
+                    <div className="flex-1 flex flex-col justify-end min-h-[220px]">
+                        <div className="flex items-end gap-3 h-52 pt-6">
+                            {chartData.map((d, i) => {
+                                const val = chartMetric === 'revenue' ? d.revenue : d.orders;
+                                const pct = Math.max(15, (val / maxVal) * 100);
+                                const isHov = hoveredBar === i;
+                                return (
+                                    <div
+                                        key={i}
+                                        onMouseEnter={() => setHoveredBar(i)}
+                                        onMouseLeave={() => setHoveredBar(null)}
+                                        className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer"
+                                    >
+                                        {/* Tooltip */}
+                                        {isHov && (
+                                            <div className="absolute -top-10 z-20 px-2.5 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-xl whitespace-nowrap animate-in fade-in">
+                                                {chartMetric === 'revenue' ? `$${val.toLocaleString()}` : `${val} Orders`}
+                                            </div>
+                                        )}
+                                        <div
+                                            style={{ height: `${pct}%` }}
+                                            className={`w-full rounded-t-xl transition-all duration-300 ${isHov ? 'bg-gradient-to-t from-indigo-600 to-purple-500 shadow-lg shadow-indigo-500/30' : 'bg-gradient-to-t from-indigo-100 to-indigo-400 group-hover:from-indigo-400 group-hover:to-indigo-500'}`}
+                                        />
+                                        <span className="text-[11px] font-semibold text-slate-500 mt-2 truncate w-full text-center">
+                                            {d.label}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Platform commission avg: <strong className="text-slate-800">2.5%</strong></span>
+                        <button onClick={() => showToast('Analytics report exported', 'success')} className="text-indigo-600 font-semibold hover:underline">
+                            Export Analytics CSV
+                        </button>
                     </div>
                 </div>
-            ))}
-        </div>
-    </div>
-</div>
 
-{/* Recent Orders Table */}
-<div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-800">Recent Orders</h3>
-        <button className="text-sm text-purple-600 font-medium hover:underline">View all</button>
-    </div>
-    <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-            <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-100 bg-gray-50/50">
-                    <th className="px-5 py-3 font-medium">Order</th>
-                    <th className="px-5 py-3 font-medium">Shop</th>
-                    <th className="px-5 py-3 font-medium">Customer</th>
-                    <th className="px-5 py-3 font-medium">Amount</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 font-medium">Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {orders.map((o, i) => {
-                    const badge = o.status === 'Completed' ? 'bg-emerald-50 text-emerald-600'
-                        : o.status === 'Pending' ? 'bg-amber-50 text-amber-600'
-                        : 'bg-red-50 text-red-500';
-                    return (
-                        <tr key={o.id} className={`border-b border-gray-50 hover:bg-gray-50/50 ${i === orders.length - 1 ? 'border-b-0' : ''}`}>
-                            <td className="px-5 py-3 font-medium text-gray-800">{o.id}</td>
-                            <td className="px-5 py-3 text-gray-600">{o.shop}</td>
-                            <td className="px-5 py-3 text-gray-600">{o.customer}</td>
-                            <td className="px-5 py-3 text-gray-700">{o.amount}</td>
-                            <td className="px-5 py-3">
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${badge}`}>{o.status}</span>
-                            </td>
-                            <td className="px-5 py-3 text-gray-500">{o.date}</td>
-                        </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    </div>
-</div>
-        </>
+                {/* Live Platform Activity Feed */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Activity size={18} className="text-indigo-600" />
+                            <h3 className="font-bold text-slate-800">Real-Time Activity</h3>
+                        </div>
+                        <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                            Live
+                        </span>
+                    </div>
+
+                    <div className="space-y-3.5 flex-1 overflow-y-auto max-h-[300px] pr-1">
+                        {activities.slice(0, 6).map((act, i) => (
+                            <div key={act.id || i} className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition">
+                                <span className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                                    {act.type === 'order' ? <ShoppingCart size={15} /> : act.type === 'shop' ? <Store size={15} /> : <Sparkles size={15} />}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-slate-800 leading-snug">{act.text}</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{act.time}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Link
+                        to="/panel/shops"
+                        className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    >
+                        <span>View all tenant stores</span>
+                        <ChevronRight size={15} />
+                    </Link>
+                </div>
+            </div>
+
+            {/* Tenant Leaderboard & Recent Orders */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                
+                {/* Top Performing Shops */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-slate-800">Boutique Leaderboard</h3>
+                        <Link to="/panel/shops" className="text-xs font-semibold text-indigo-600 hover:underline">
+                            View all ({shops.length})
+                        </Link>
+                    </div>
+
+                    <div className="space-y-3">
+                        {shopLeaderboard.map((s, idx) => (
+                            <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className="w-6 text-center font-extrabold text-sm text-slate-400">
+                                        #{idx + 1}
+                                    </span>
+                                    <span
+                                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black shadow shrink-0"
+                                        style={{ backgroundColor: s.accent || '#6366f1' }}
+                                    >
+                                        {s.logo}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-slate-800 text-sm truncate">{s.name}</p>
+                                        <p className="text-xs text-slate-400 truncate">{s.ownerName} · {s.products?.length || 0} items</p>
+                                    </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="font-bold text-slate-800 text-sm">${s.revenue.toLocaleString()}</p>
+                                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                        {s.plan}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Recent Platform Orders Table */}
+                <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <div>
+                            <h3 className="font-bold text-slate-800">Recent Customer Orders</h3>
+                            <p className="text-xs text-slate-500">Real-time checkout transactions</p>
+                        </div>
+                        <Link to="/panel/owner" className="text-xs font-semibold text-indigo-600 hover:underline">
+                            Owner Order Manager →
+                        </Link>
+                    </div>
+
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-xs font-semibold text-slate-400 border-b border-slate-100 bg-slate-50/80">
+                                    <th className="px-6 py-3.5">Order ID</th>
+                                    <th className="px-6 py-3.5">Shop</th>
+                                    <th className="px-6 py-3.5">Customer</th>
+                                    <th className="px-6 py-3.5">Amount</th>
+                                    <th className="px-6 py-3.5">Status</th>
+                                    <th className="px-6 py-3.5">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {orders.slice(0, 5).map((o) => {
+                                    const badgeClass =
+                                        o.status === 'Delivered'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : o.status === 'Processing'
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : o.status === 'Shipped'
+                                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                            : 'bg-amber-50 text-amber-700 border-amber-200';
+                                    return (
+                                        <tr key={o.id} className="hover:bg-slate-50/70 transition">
+                                            <td className="px-6 py-3.5 font-bold text-slate-800 font-mono text-xs">{o.id}</td>
+                                            <td className="px-6 py-3.5 text-slate-700 font-medium">{o.shopName}</td>
+                                            <td className="px-6 py-3.5">
+                                                <p className="font-semibold text-slate-800 text-xs">{o.customer}</p>
+                                                <p className="text-[11px] text-slate-400">{o.email}</p>
+                                            </td>
+                                            <td className="px-6 py-3.5 font-bold text-slate-800">${o.total}</td>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}`}>
+                                                    {o.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-xs text-slate-500">{o.date}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
