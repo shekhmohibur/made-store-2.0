@@ -5,7 +5,7 @@
 
 import { compressImage } from '../utils/imageCompressor';
 
-const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'http://localhost/backend/api';
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://clothing.trivora.top/api';
 
 let activeApiUrl = (() => {
     try {
@@ -181,10 +181,11 @@ export const ApiService = {
         return request(`/orders.php${query}`);
     },
 
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, statusData) {
+        const payload = typeof statusData === 'string' ? { status: statusData } : statusData;
         return request(`/orders.php?id=${encodeURIComponent(orderId)}`, {
             method: 'PUT',
-            body: JSON.stringify({ status }),
+            body: JSON.stringify(payload),
         });
     },
 
@@ -233,6 +234,20 @@ export const ApiService = {
             method: 'POST',
             body: JSON.stringify({ dataUrl: compResult.dataUrl }),
         });
+    },
+
+    // -------------------------------------------------------------
+    // CPANEL SUBDOMAIN PROVISIONING
+    // -------------------------------------------------------------
+    async provisionSubdomain(slug, customDomain = '') {
+        return request('/cpanel.php', {
+            method: 'POST',
+            body: JSON.stringify({ slug, custom_domain: customDomain }),
+        });
+    },
+
+    async getSubdomainConfig() {
+        return request('/cpanel.php');
     },
 
     // -------------------------------------------------------------

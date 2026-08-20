@@ -225,9 +225,25 @@ const Shops = () => {
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="font-bold text-slate-900 text-sm">{s.name}</span>
                                                     </div>
-                                                    <p className="text-xs text-slate-400 font-mono truncate">
-                                                        /{s.slug}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <a
+                                                            href={`https://${s.slug}.trivora.top`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-[11px] text-indigo-600 hover:text-indigo-800 font-mono font-bold flex items-center gap-1 transition"
+                                                            title="Live Merchant Subdomain"
+                                                        >
+                                                            <span>{s.slug}.trivora.top</span>
+                                                            <ExternalLink size={10} />
+                                                        </a>
+                                                        <span className="text-slate-300">·</span>
+                                                        <Link
+                                                            to={`/shop/${s.slug}`}
+                                                            className="text-[11px] text-slate-400 hover:text-slate-700 font-semibold"
+                                                        >
+                                                            Direct View
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>

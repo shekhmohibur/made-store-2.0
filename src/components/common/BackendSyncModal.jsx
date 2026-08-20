@@ -118,20 +118,20 @@ const BackendSyncModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
-                            onClick={() => setInputUrl('http://localhost/backend/api')}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[11px] font-bold text-slate-600 transition"
+                            onClick={() => setInputUrl('https://clothing.trivora.top/api')}
+                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[11px] font-bold transition border border-indigo-200"
                         >
-                            Localhost Preset
+                            ⚡ clothing.trivora.top/api
                         </button>
                         <button
                             type="button"
                             onClick={() => setInputUrl('/api')}
                             className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[11px] font-bold text-slate-600 transition"
                         >
-                            Direct /api
+                            /api
                         </button>
                         <button
                             type="submit"

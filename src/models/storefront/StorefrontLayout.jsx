@@ -10,6 +10,7 @@ import { CURRENCIES } from '../../utils/currency';
 import ToastContainer from '../../components/common/ToastContainer';
 import GlobalSearchModal from '../../components/common/GlobalSearchModal';
 import DemoRoleBar from '../../components/common/DemoRoleBar';
+import CustomPaymentForm from '../../components/storefront/CustomPaymentForm';
 
 const StorefrontLayout = () => {
     const { slug } = useParams();
@@ -40,6 +41,14 @@ const StorefrontLayout = () => {
     const [orderPlaced, setOrderPlaced] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+    // Custom Payment Data & Validation State
+    const [customPaymentData, setCustomPaymentData] = useState({
+        trxId: '',
+        senderNumber: '',
+        receiptImage: '',
+    });
+    const [customPaymentErrors, setCustomPaymentErrors] = useState({});
 
     // Floating WhatsApp Popup
     const [whatsappPopupOpen, setWhatsappPopupOpen] = useState(false);
@@ -170,7 +179,7 @@ const StorefrontLayout = () => {
     const handleSubmitCheckout = (e) => {
         e.preventDefault();
         if (!form.name || !form.email || !form.address) {
-            showToast('Please complete shipping details', 'warning');
+            showToast('Please complete shipping details (Name, Email, Address)', 'warning');
             return;
         }
 
@@ -179,9 +188,46 @@ const StorefrontLayout = () => {
             return;
         }
 
+        // Custom Payment Method Validation
+        let paymentDetailsPayload = null;
+        if (form.paymentMethod && form.paymentMethod.startsWith('cpm-')) {
+            const methodId = form.paymentMethod.replace('cpm-', '');
+            const customMethods = shop.customPaymentMethods || [];
+            const selectedMethod = customMethods.find((m) => String(m.id) === String(methodId)) || {
+                id: methodId,
+                name: 'Custom Payment Gateway',
+                requireTrxId: true,
+                requireSenderNumber: true
+            };
+
+            const errors = {};
+            if (selectedMethod.requireTrxId !== false && (!customPaymentData.trxId || customPaymentData.trxId.length < 4)) {
+                errors.trxId = 'Please enter a valid Transaction ID / Reference Number (min 4 chars)';
+            }
+            if (selectedMethod.requireSenderNumber !== false && (!customPaymentData.senderNumber || customPaymentData.senderNumber.trim().length < 3)) {
+                errors.senderNumber = 'Please enter the phone / account number used to send payment';
+            }
+
+            if (Object.keys(errors).length > 0) {
+                setCustomPaymentErrors(errors);
+                showToast('Please complete all required payment verification fields below', 'warning');
+                return;
+            }
+
+            setCustomPaymentErrors({});
+            paymentDetailsPayload = {
+                methodId: selectedMethod.id,
+                methodName: selectedMethod.name,
+                accountNumber: selectedMethod.accountNumber,
+                trxId: customPaymentData.trxId,
+                senderNumber: customPaymentData.senderNumber,
+                receiptImage: customPaymentData.receiptImage,
+            };
+        }
+
         setIsSubmitting(true);
         setTimeout(() => {
-            const order = placeOrder(shop.id, cart, form, appliedCoupon?.code || '');
+            const order = placeOrder(shop.id, cart, form, appliedCoupon?.code || '', paymentDetailsPayload);
             setCart([]);
             setCheckoutOpen(false);
             setCartOpen(false);
@@ -928,6 +974,47 @@ const StorefrontLayout = () => {
                                             <span className="text-[10px] font-bold text-emerald-600 uppercase">Fast</span>
                                         </label>
                                     )}
+
+                                    {/* Merchant Configured Custom Payment Methods */}
+                                    {Array.isArray(shop.customPaymentMethods) && shop.customPaymentMethods.filter((c) => c.active !== false).map((cpm) => {
+                                        const isSelected = form.paymentMethod === `cpm-${cpm.id}`;
+                                        return (
+                                            <div key={cpm.id} className="space-y-2">
+                                                <label className={`p-3 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition ${isSelected ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="radio"
+                                                            name="payment"
+                                                            value={`cpm-${cpm.id}`}
+                                                            checked={isSelected}
+                                                            onChange={() => setForm({ ...form, paymentMethod: `cpm-${cpm.id}` })}
+                                                            className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                                                        />
+                                                        <div>
+                                                            <p className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-indigo-600" /> {cpm.name}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-500 font-mono">
+                                                                {cpm.accountNumber ? `Account: ${cpm.accountNumber}` : 'Direct Merchant Verification'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded uppercase">
+                                                        Manual Verification
+                                                    </span>
+                                                </label>
+
+                                                {isSelected && (
+                                                    <CustomPaymentForm
+                                                        method={cpm}
+                                                        paymentData={customPaymentData}
+                                                        onChange={(field, val) => setCustomPaymentData((prev) => ({ ...prev, [field]: val }))}
+                                                        errors={customPaymentErrors}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

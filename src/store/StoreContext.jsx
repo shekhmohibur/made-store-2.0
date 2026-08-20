@@ -77,10 +77,7 @@ export const StoreProvider = ({ children }) => {
 
     const [activities, setActivities] = useState(() =>
         getStored(STORAGE_KEYS.ACTIVITIES, [
-            { id: 'ACT-1', text: 'New merchant application: "Velvet & Silk Atelier" submitted', time: '5m ago', type: 'signup' },
-            { id: 'ACT-2', text: 'Order #ORD-1004 placed at Linen & Co ($118.00)', time: '20m ago', type: 'order' },
-            { id: 'ACT-3', text: 'Urban Threads updated inventory for Vintage Washed Denim Jacket', time: '1h ago', type: 'product' },
-            { id: 'ACT-4', text: 'Super Admin approved "FB Dress Store" boutique access', time: '2h ago', type: 'approval' },
+            { id: 'ACT-INIT', text: 'Kaizer Commerce production engine initialized successfully', time: 'Just now', type: 'system' }
         ])
     );
 
@@ -313,12 +310,15 @@ export const StoreProvider = ({ children }) => {
             prev.map((u) => (u.shopId === shopId ? { ...u, status: 'Active' } : u))
         );
 
-        // Async sync with MySQL Backend
+        // Async sync with MySQL Backend & cPanel Subdomain
         ApiService.updateShop(shopId, { status: 'Active' }).catch(() => {});
-
         const targetShop = shops.find((s) => s.id === shopId);
-        logActivity(`Super Admin approved "${targetShop?.name || shopId}" merchant storefront`, 'approval');
-        showToast(`Boutique "${targetShop?.name || shopId}" is now Approved & Live!`, 'success');
+        if (targetShop?.slug) {
+            ApiService.provisionSubdomain(targetShop.slug).catch(() => {});
+        }
+
+        logActivity(`Super Admin approved "${targetShop?.name || shopId}" merchant storefront (Subdomain published: ${targetShop?.slug || ''}.clothing.trivora.top)`, 'approval');
+        showToast(`Boutique "${targetShop?.name || shopId}" approved & subdomain published live!`, 'success');
     };
 
     // Super Admin: Reject / Suspend Shop
@@ -375,17 +375,19 @@ export const StoreProvider = ({ children }) => {
                 customDomain: true,
                 maxProducts: 500,
             },
+            customPaymentMethods: shopData.customPaymentMethods || [],
             joined: 'Today',
             products: [],
             ...shopData,
         };
         setShops((prev) => [newShop, ...prev]);
 
-        // Async sync with MySQL Backend
+        // Async sync with MySQL Backend & cPanel Subdomain
         ApiService.createShop({ ...newShop, ownerName: shopData.ownerName || 'Owner' }).catch(() => {});
+        ApiService.provisionSubdomain(slug).catch(() => {});
 
-        logActivity(`Created new boutique "${newShop.name}"`, 'shop');
-        showToast(`Shop "${newShop.name}" provisioned successfully!`, 'success');
+        logActivity(`Created new boutique "${newShop.name}" (Subdomain: ${slug}.trivora.top)`, 'shop');
+        showToast(`Shop "${newShop.name}" provisioned & subdomain published!`, 'success');
         return newShop;
     };
 
@@ -505,7 +507,7 @@ export const StoreProvider = ({ children }) => {
     };
 
     // Orders & Checkout
-    const placeOrder = (shopId, items, customerInfo, couponCode = '') => {
+    const placeOrder = (shopId, items, customerInfo, couponCode = '', paymentDetails = null) => {
         const targetShop = shops.find((s) => s.id === shopId);
         const orderId = `ORD-${toastCounter++}`;
         const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
@@ -520,6 +522,13 @@ export const StoreProvider = ({ children }) => {
 
         const total = Math.max(0, subtotal - discount);
 
+        const isCustomPayment = Boolean(paymentDetails && paymentDetails.trxId);
+        const initialPaymentStatus = isCustomPayment
+            ? 'Pending Verification'
+            : customerInfo.paymentMethod === 'cod' || customerInfo.paymentMethod === 'whatsapp'
+            ? 'Pending'
+            : 'Paid';
+
         const newOrder = {
             id: orderId,
             shopId,
@@ -528,8 +537,12 @@ export const StoreProvider = ({ children }) => {
             email: customerInfo.email,
             phone: customerInfo.phone || '+1 (555) 019-2834',
             address: customerInfo.address,
-            paymentMethod: customerInfo.paymentMethod || 'Credit Card',
-            paymentStatus: 'Paid',
+            city: customerInfo.city || '',
+            state: customerInfo.state || '',
+            zip: customerInfo.zip || '',
+            paymentMethod: paymentDetails?.methodName || customerInfo.paymentMethod || 'Credit Card',
+            paymentStatus: initialPaymentStatus,
+            paymentDetails: paymentDetails || null,
             items,
             subtotal,
             discount,
@@ -538,7 +551,15 @@ export const StoreProvider = ({ children }) => {
             date: 'Today',
             timeline: [
                 { title: 'Order Placed', time: 'Just now', done: true },
-                { title: 'Payment Confirmed', time: 'Just now', done: true },
+                {
+                    title: isCustomPayment
+                        ? `TrxID #${paymentDetails.trxId} Submitted for Merchant Verification`
+                        : initialPaymentStatus === 'Paid'
+                        ? 'Payment Confirmed'
+                        : 'Awaiting Courier Delivery / WhatsApp Confirmation',
+                    time: 'Just now',
+                    done: initialPaymentStatus === 'Paid'
+                },
                 { title: 'Packing at Warehouse', time: 'Queued', done: false },
                 { title: 'Courier Delivery', time: 'Pending', done: false },
             ]
@@ -558,13 +579,39 @@ export const StoreProvider = ({ children }) => {
             shopId,
             shopName: newOrder.shopName,
             items,
-            customer: customerInfo,
+            customer: { ...customerInfo, paymentDetails },
             discount,
         }).catch(() => {});
 
-        logActivity(`New order #${orderId} received from ${customerInfo.name} ($${total})`, 'order');
+        logActivity(`New order #${orderId} received from ${customerInfo.name} ($${total}) [${newOrder.paymentMethod}]`, 'order');
         showToast(`Order #${orderId} placed successfully!`, 'success');
         return newOrder;
+    };
+
+    const verifyOrderPayment = (orderId, isApproved, note = '') => {
+        const paymentStatus = isApproved ? 'Paid' : 'Verification Rejected';
+        setOrders((prev) =>
+            prev.map((o) => {
+                if (o.id === orderId) {
+                    const newStatus = isApproved ? 'Processing' : o.status;
+                    const updatedTimeline = (o.timeline || []).map((t, idx) => {
+                        if (idx === 1) return { ...t, done: isApproved, title: isApproved ? 'Payment Verified & Approved' : `Payment Rejected: ${note || 'Invalid TrxID'}` };
+                        return t;
+                    });
+                    return {
+                        ...o,
+                        paymentStatus,
+                        status: newStatus,
+                        timeline: updatedTimeline,
+                        verificationNote: note || ''
+                    };
+                }
+                return o;
+            })
+        );
+        ApiService.updateOrderStatus(orderId, { status: isApproved ? 'Processing' : 'Pending', paymentStatus }).catch(() => {});
+        logActivity(`Order #${orderId} payment ${isApproved ? 'Approved & Verified' : 'Rejected'}`, 'order');
+        showToast(isApproved ? `Payment for Order #${orderId} verified and marked as Paid!` : `Payment verification rejected for Order #${orderId}`, isApproved ? 'success' : 'warning');
     };
 
     const updateOrderStatus = (orderId, status) => {
@@ -727,6 +774,7 @@ export const StoreProvider = ({ children }) => {
                 updateProductStock,
                 placeOrder,
                 updateOrderStatus,
+                verifyOrderPayment,
                 getShopOrders,
                 addUser,
                 updateUser,

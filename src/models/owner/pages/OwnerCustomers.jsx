@@ -7,86 +7,16 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 
-const initialSeedCustomers = [
-    {
-        id: 'CUST-101',
-        name: 'Jessica Miller',
-        email: 'jessica.m@example.com',
-        phone: '+1 (555) 382-9912',
-        tier: 'Platinum',
-        ordersCount: 8,
-        lifetimeSpend: 1420.00,
-        lastOrder: 'Yesterday',
-        city: 'New York, NY',
-        favoriteCategory: 'Outerwear',
-        notes: 'Loves oversized virgin wool coats and French tailoring. Always orders size M.',
-    },
-    {
-        id: 'CUST-102',
-        name: 'Alexander Wright',
-        email: 'a.wright@fashionmail.com',
-        phone: '+1 (555) 839-2104',
-        tier: 'Gold',
-        ordersCount: 5,
-        lifetimeSpend: 840.00,
-        lastOrder: '3 days ago',
-        city: 'Los Angeles, CA',
-        favoriteCategory: 'Streetwear',
-        notes: 'Pre-ordered 2 viral denim jackets. Responsive to WhatsApp drop notifications.',
-    },
-    {
-        id: 'CUST-103',
-        name: 'Sophia Laurent',
-        email: 'sophia@laurent.fr',
-        phone: '+33 6 12 34 56 78',
-        tier: 'Platinum',
-        ordersCount: 11,
-        lifetimeSpend: 2890.00,
-        lastOrder: '1 week ago',
-        city: 'Paris, France',
-        favoriteCategory: 'Dresses',
-        notes: 'VIP client since launch. Prefers silk charmeuse evening wear.',
-    },
-    {
-        id: 'CUST-104',
-        name: 'David Chen',
-        email: 'david.chen@techglobal.io',
-        phone: '+1 (555) 492-1188',
-        tier: 'Silver',
-        ordersCount: 3,
-        lifetimeSpend: 420.00,
-        lastOrder: '2 weeks ago',
-        city: 'San Francisco, CA',
-        favoriteCategory: 'Linen Collection',
-        notes: 'Purchased linen resort shirts for holiday.',
-    },
-    {
-        id: 'CUST-105',
-        name: 'Elena Rostova',
-        email: 'elena.rostova@atelier.de',
-        phone: '+49 151 23456789',
-        tier: 'Silver',
-        ordersCount: 2,
-        lifetimeSpend: 290.00,
-        lastOrder: '3 weeks ago',
-        city: 'Berlin, Germany',
-        favoriteCategory: 'Knitwear',
-        notes: 'First time buyer. Rated cashmere knit 5 stars.',
-    },
-    {
-        id: 'CUST-106',
-        name: 'Marcus Sterling',
-        email: 'marcus@sterlingcorp.co.uk',
-        phone: '+44 7700 900123',
-        tier: 'Gold',
-        ordersCount: 6,
-        lifetimeSpend: 950.00,
-        lastOrder: '1 month ago',
-        city: 'London, UK',
-        favoriteCategory: 'Suits & Tailoring',
-        notes: 'Prefers expedited courier shipping.',
-    },
+// Production: Empty customer CRM directory ready for real patrons
+const initialSeedCustomers = [];
+
+/*
+// DEMO CUSTOMERS (COMMENTED OUT FOR PRODUCTION)
+const demoCustomers = [
+    { id: 'CUST-101', name: 'Jessica Miller', email: 'jessica.m@example.com', tier: 'Platinum', ordersCount: 8, lifetimeSpend: 1420.00 },
+    { id: 'CUST-102', name: 'Alexander Wright', email: 'a.wright@fashionmail.com', tier: 'Gold', ordersCount: 5, lifetimeSpend: 840.00 },
 ];
+*/
 
 const OwnerCustomers = () => {
     const { shop, accent } = useOutletContext();

@@ -3,8 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 // Error Boundary & Common Components
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
-// Public & Onboarding Portal
-import LandingPage from '../models/public/LandingPage';
+import SubdomainGateway from './SubdomainGateway';
 import SignupPage from '../models/public/SignupPage';
 import LoginPage from '../models/public/LoginPage';
 import PendingApprovalPage from '../models/public/PendingApprovalPage';
@@ -41,7 +40,7 @@ import DressShop from '../models/storefront/DressShop';
 
 const Router = createBrowserRouter([
     // ---------- Public Marketing & Merchant Signup Flow ----------
-    { path: '/', Component: LandingPage, ErrorBoundary: ErrorBoundary },
+    { path: '/', Component: SubdomainGateway, ErrorBoundary: ErrorBoundary },
     { path: '/signup', Component: SignupPage, ErrorBoundary: ErrorBoundary },
     { path: '/login', Component: LoginPage, ErrorBoundary: ErrorBoundary },
     { path: '/pending-approval', Component: PendingApprovalPage, ErrorBoundary: ErrorBoundary },

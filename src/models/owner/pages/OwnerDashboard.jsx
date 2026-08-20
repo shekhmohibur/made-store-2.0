@@ -83,6 +83,53 @@ const OwnerDashboard = () => {
                 </div>
             </div>
 
+            {/* Published Live Subdomain & Domain Routing Hub */}
+            <div className="bg-slate-900 text-white rounded-3xl p-5 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                    <span className="w-11 h-11 rounded-2xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-lg">
+                        🌐
+                    </span>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Published Merchant Subdomain:</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <CheckCircle2 size={11} /> Live & Active
+                            </span>
+                        </div>
+                        <a
+                            href={`https://${shop.slug}.trivora.top`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-base font-extrabold text-white hover:text-indigo-300 transition font-mono flex items-center gap-1.5 mt-0.5"
+                        >
+                            <span>https://{shop.slug}.trivora.top</span>
+                            <ArrowUpRight size={16} className="text-indigo-400" />
+                        </a>
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            Owner Portal: <span className="text-slate-200 font-bold">https://{shop.slug}.trivora.top/owner</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <a
+                        href={`https://${shop.slug}.trivora.top`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+                    >
+                        <span>Open Customer Store</span>
+                        <ArrowUpRight size={14} />
+                    </a>
+                    <Link
+                        to={`/shop/${shop.slug}`}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition"
+                    >
+                        Direct Preview
+                    </Link>
+                </div>
+            </div>
+
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((s, i) => (

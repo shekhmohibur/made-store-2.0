@@ -37,11 +37,16 @@ const BLOG_POSTS = [
 
 const BRANDS = ['ZARA', 'MANGO', 'PULL&BEAR', 'H&M', 'BERSHKA', 'MASSIMO DUTTI'];
 
-const RECENT_BUYERS = [
+// Production: Live buyer activity
+const RECENT_BUYERS = [];
+
+/*
+// DEMO RECENT BUYERS (COMMENTED OUT FOR PRODUCTION)
+const demoBuyers = [
     { name: 'Sarah M.', city: 'Miami, FL', item: 'Handmade Flared Wool Jacket', time: '2 mins ago' },
     { name: 'Chloe T.', city: 'Atlanta, GA', item: 'Coat With Wraparound Collar', time: '4 mins ago' },
-    { name: 'Jessica R.', city: 'Austin, TX', item: 'Mulberry Silk Slip Dress', time: '7 mins ago' },
 ];
+*/
 
 const Storefront = () => {
     const { shop, addToCart, formatPrice = (p) => `$${Number(p).toFixed(2)}` } = useOutletContext();
@@ -84,7 +89,7 @@ const Storefront = () => {
 
     // Social proof toast timer
     useEffect(() => {
-        if (!isViralTheme) return;
+        if (!isViralTheme || RECENT_BUYERS.length === 0) return;
         const buyerTimer = setInterval(() => {
             setIsBuyerToastVisible(false);
             setTimeout(() => {
