@@ -558,8 +558,28 @@ export const StoreProvider = ({ children }) => {
     const customerLogout = () => {
         setCurrentCustomer(null);
         localStorage.removeItem('trivora_current_customer');
-        localStorage.removeItem('kaizer_current_customer');
         showToast('Signed out of customer account', 'info');
+    };
+
+    // OTP & Password Reset Methods
+    const sendForgotPasswordOtp = async (email) => {
+        return ApiService.sendForgotPasswordOtp(email);
+    };
+
+    const verifyForgotOtp = async (email, code) => {
+        return ApiService.verifyForgotOtp(email, code);
+    };
+
+    const resetPassword = async (email, code, newPassword) => {
+        return ApiService.resetPassword(email, code, newPassword);
+    };
+
+    const sendSignupOtp = async (email) => {
+        return ApiService.sendSignupOtp(email);
+    };
+
+    const verifySignupOtp = async (email, code) => {
+        return ApiService.verifySignupOtp(email, code);
     };
 
     // Merchant Signup Workflow (Creates Pending Store)
@@ -881,15 +901,17 @@ export const StoreProvider = ({ children }) => {
         };
 
         // 1. Immediately update React state & localStorage
-        setShops((prev) =>
-            prev.map((s) => {
-                if (s.id === shopId) {
-                    const currentProds = s.products || [];
+        setShops((prev) => {
+            const targetShop = prev.find((s) => s.id === shopId || s.id == shopId || s.slug === shopId) || prev[0];
+            if (!targetShop) return prev;
+            return prev.map((s) => {
+                if (s.id === targetShop.id) {
+                    const currentProds = Array.isArray(s.products) ? s.products : [];
                     return { ...s, products: [newProduct, ...currentProds.filter((p) => p.id !== id)] };
                 }
                 return s;
-            })
-        );
+            });
+        });
 
         logActivity(`Added apparel item "${newProduct.name}" to inventory`, 'product');
         showToast(`Item "${newProduct.name}" added to catalog`, 'success');
@@ -898,17 +920,19 @@ export const StoreProvider = ({ children }) => {
         try {
             const apiRes = await ApiService.addProduct(shopId, newProduct);
             if (apiRes && apiRes.status === 'success' && apiRes.product) {
-                setShops((prev) =>
-                    prev.map((s) => {
-                        if (s.id === shopId) {
+                setShops((prev) => {
+                    const targetShop = prev.find((s) => s.id === shopId || s.id == shopId || s.slug === shopId) || prev[0];
+                    if (!targetShop) return prev;
+                    return prev.map((s) => {
+                        if (s.id === targetShop.id) {
                             return {
                                 ...s,
                                 products: (s.products || []).map((p) => (p.id === id ? { ...p, ...apiRes.product } : p)),
                             };
                         }
                         return s;
-                    })
-                );
+                    });
+                });
             }
         } catch (e) {
             console.warn('Backend addProduct warning (operating on local cache):', e);
@@ -918,17 +942,19 @@ export const StoreProvider = ({ children }) => {
     };
 
     const updateProduct = (shopId, productId, patch) => {
-        setShops((prev) =>
-            prev.map((s) => {
-                if (s.id === shopId) {
+        setShops((prev) => {
+            const targetShop = prev.find((s) => s.id === shopId || s.id == shopId || s.slug === shopId) || prev[0];
+            if (!targetShop) return prev;
+            return prev.map((s) => {
+                if (s.id === targetShop.id) {
                     return {
                         ...s,
                         products: (s.products || []).map((p) => (p.id === productId ? { ...p, ...patch } : p)),
                     };
                 }
                 return s;
-            })
-        );
+            });
+        });
         ApiService.updateProduct(productId, patch).catch((e) => {
             console.error('Backend updateProduct error:', e);
         });
@@ -936,25 +962,24 @@ export const StoreProvider = ({ children }) => {
     };
 
     const deleteProduct = (shopId, productId) => {
-        const targetShop = shops.find((s) => s.id === shopId);
-        const prod = (targetShop?.products || []).find((p) => p.id === productId);
-
-        setShops((prev) =>
-            prev.map((s) => {
-                if (s.id === shopId) {
+        setShops((prev) => {
+            const targetShop = prev.find((s) => s.id === shopId || s.id == shopId || s.slug === shopId) || prev[0];
+            if (!targetShop) return prev;
+            return prev.map((s) => {
+                if (s.id === targetShop.id) {
                     return {
                         ...s,
                         products: (s.products || []).filter((p) => p.id !== productId),
                     };
                 }
                 return s;
-            })
-        );
+            });
+        });
         ApiService.deleteProduct(productId).catch((e) => {
             console.error('Backend deleteProduct error:', e);
         });
-        logActivity(`Deleted product "${prod?.name || productId}"`, 'warning');
-        showToast('Product removed from catalog', 'info');
+        logActivity('Removed item from product inventory', 'product');
+        showToast('Item deleted from catalog', 'info');
     };
 
     const updateProductStock = (shopId, productId, deltaOrStock, isDirect = false) => {
@@ -1229,6 +1254,11 @@ export const StoreProvider = ({ children }) => {
                 login,
                 loginAs,
                 logout,
+                sendForgotPasswordOtp,
+                verifyForgotOtp,
+                resetPassword,
+                sendSignupOtp,
+                verifySignupOtp,
                 updateUserProfile,
                 registerMerchantSignup,
                 approveShop,

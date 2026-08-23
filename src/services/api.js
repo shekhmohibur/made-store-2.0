@@ -155,6 +155,44 @@ export const ApiService = {
     },
 
     // -------------------------------------------------------------
+    // OTP & PASSWORD RESET (SMTP VERIFICATION)
+    // -------------------------------------------------------------
+    async sendSignupOtp(email) {
+        return request('/users.php?action=send_signup_otp', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        });
+    },
+
+    async verifySignupOtp(email, code) {
+        return request('/users.php?action=verify_signup_otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, code }),
+        });
+    },
+
+    async sendForgotPasswordOtp(email) {
+        return request('/users.php?action=send_forgot_otp', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        });
+    },
+
+    async verifyForgotOtp(email, code) {
+        return request('/users.php?action=verify_forgot_otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, code }),
+        });
+    },
+
+    async resetPassword(email, code, password) {
+        return request('/users.php?action=reset_password', {
+            method: 'POST',
+            body: JSON.stringify({ email, code, password }),
+        });
+    },
+
+    // -------------------------------------------------------------
     // PRODUCTS & INVENTORY
     // -------------------------------------------------------------
     async getProducts(shopId = null) {

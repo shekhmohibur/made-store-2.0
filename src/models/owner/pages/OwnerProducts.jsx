@@ -25,8 +25,12 @@ const IMAGE_PRESETS = [
 const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 const OwnerProducts = () => {
-    const { shop, accent } = useOutletContext();
-    const { addProduct, updateProduct, deleteProduct, updateProductStock, showToast } = useStore();
+    const { shop: layoutShop, accent } = useOutletContext();
+    const { shops, addProduct, updateProduct, deleteProduct, updateProductStock, showToast } = useStore();
+
+    // Subscribe to live shop from useStore for reactive re-renders
+    const liveShop = shops.find((s) => s.id === layoutShop?.id || s.slug === layoutShop?.slug) || layoutShop || shops[0] || {};
+    const shop = liveShop;
 
     const [viewMode, setViewMode] = useState('grid');
     const [searchTerm, setSearchTerm] = useState('');
@@ -60,34 +64,42 @@ const OwnerProducts = () => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
 
+        const nameVal = fd.get('name');
+        if (!nameVal || !nameVal.trim()) {
+            showToast('Please enter a product name', 'warning');
+            return;
+        }
+
         const colorsRaw = fd.get('colors') || 'Black, Blue';
         const colorsList = colorsRaw.split(',').map((c) => {
             const name = c.trim();
             return { name, hex: '#18181b' };
         }).filter((c) => c.name.length > 0);
 
+        const targetShopId = shop?.id || layoutShop?.id || (shops[0]?.id) || 'SHP-001';
+
         const data = {
-            name: fd.get('name'),
-            category: fd.get('category'),
-            price: Number(fd.get('price')) || 0,
-            originalPrice: Number(fd.get('originalPrice')) || Number(fd.get('price')) * 1.2,
-            stock: Number(fd.get('stock')) || 0,
+            name: nameVal.trim(),
+            category: fd.get('category') || 'Casuals',
+            price: parseFloat(fd.get('price')) || 0,
+            originalPrice: parseFloat(fd.get('originalPrice')) || (parseFloat(fd.get('price')) * 1.25) || 0,
+            stock: parseInt(fd.get('stock'), 10) || 0,
             sku: fd.get('sku') || `SKU-${Date.now().toString(36).toUpperCase()}`,
-            badge: fd.get('badge') === 'None' ? '' : fd.get('badge'),
-            emoji: selectedEmoji,
+            badge: fd.get('badge') === 'None' ? '' : (fd.get('badge') || ''),
+            emoji: selectedEmoji || '👗',
             image: selectedImage || (fd.get('customImage') || IMAGE_PRESETS[0].url),
             gallery: [selectedImage || (fd.get('customImage') || IMAGE_PRESETS[0].url)],
-            sizes: selectedSizes,
-            colors: colorsList,
-            description: fd.get('description') || 'Premium apparel crafted from fine textiles.',
+            sizes: selectedSizes.length > 0 ? selectedSizes : ['S', 'M', 'L', 'XL'],
+            colors: colorsList.length > 0 ? colorsList : [{ name: 'Classic Black', hex: '#18181b' }],
+            description: fd.get('description') || 'Premium handcrafted apparel crafted from fine textiles.',
             fabric: fd.get('fabric') || '100% Cotton Blend',
             care: fd.get('care') || 'Machine wash cold with like colors.',
         };
 
         if (modalProduct && modalProduct.id) {
-            await updateProduct(shop.id, modalProduct.id, data);
+            await updateProduct(targetShopId, modalProduct.id, data);
         } else {
-            await addProduct(shop.id, data);
+            await addProduct(targetShopId, data);
         }
         setModalProduct(null);
     };

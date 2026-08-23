@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-    Sparkles, Store, Palette, User
+    Sparkles, Store, Palette, User, Shield, Mail, ArrowRight, Loader2,
+    CheckCircle2, X, RefreshCw, Lock
 } from 'lucide-react';
 import { THEME_CATALOG } from '../../themes/themeCatalog';
+import { ApiService } from '../../services/api';
 import { useStore } from '../../store/useStore';
 import ToastContainer from '../../components/common/ToastContainer';
 
@@ -36,24 +38,123 @@ const SignupPage = () => {
         plan: initialPlanParam,
     });
 
+    // 6-Digit OTP Verification State
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
+
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            timerRef.current = setTimeout(() => {
+                setResendCooldown((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearTimeout(timerRef.current);
+    }, [resendCooldown]);
+
     const slug = form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'your-brand';
 
-    const handleSubmit = (e) => {
+    // Step 1: Validate inputs and trigger 6-digit OTP email
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.name.trim() || !form.ownerName.trim() || !form.email.trim()) {
+        const cleanEmail = form.email.trim().toLowerCase();
+
+        if (!form.name.trim() || !form.ownerName.trim() || !cleanEmail) {
             showToast('Please fill in all required brand fields', 'warning');
             return;
         }
 
-        const selectedThemeObj = THEME_CATALOG.find((t) => t.id === form.theme) || THEME_CATALOG[0];
+        if (!cleanEmail.includes('@')) {
+            showToast('Please enter a valid email address', 'warning');
+            return;
+        }
 
-        registerMerchantSignup({
-            ...form,
-            slug,
-            accent: selectedThemeObj.accent,
-        });
+        if (!form.password || form.password.length < 6) {
+            showToast('Password must be at least 6 characters long', 'warning');
+            return;
+        }
 
-        navigate('/pending-approval');
+        setIsSendingOtp(true);
+        try {
+            const res = await ApiService.sendSignupOtp(cleanEmail);
+            if (res && res.status === 'success') {
+                showToast(res.message || '6-digit verification code sent to ' + cleanEmail, 'success');
+                setIsOtpModalOpen(true);
+                setResendCooldown(60);
+                if (res.dev_hint) {
+                    setOtpCode(res.dev_hint);
+                }
+            } else {
+                showToast(res?.message || 'An error occurred while sending verification email', 'error');
+            }
+        } catch (err) {
+            showToast(err?.message || 'Failed to dispatch verification code', 'error');
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    // Resend OTP
+    const handleResendOtp = async () => {
+        if (resendCooldown > 0 || isSendingOtp) return;
+        setIsSendingOtp(true);
+        try {
+            const res = await ApiService.sendSignupOtp(form.email.trim().toLowerCase());
+            if (res && res.status === 'success') {
+                showToast('New 6-digit verification code sent!', 'success');
+                setResendCooldown(60);
+                if (res.dev_hint) {
+                    setOtpCode(res.dev_hint);
+                }
+            } else {
+                showToast(res?.message || 'Failed to resend code', 'error');
+            }
+        } catch (err) {
+            showToast(err?.message || 'Failed to resend verification code', 'error');
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    // Step 2: Verify 6-digit OTP and complete merchant registration
+    const handleVerifyOtpAndSignup = async (e) => {
+        e.preventDefault();
+        const cleanEmail = form.email.trim().toLowerCase();
+        const cleanCode = otpCode.trim();
+
+        if (!cleanCode || cleanCode.length < 6) {
+            showToast('Please enter the full 6-digit verification code', 'warning');
+            return;
+        }
+
+        setIsVerifyingOtp(true);
+        try {
+            const verifyRes = await ApiService.verifySignupOtp(cleanEmail, cleanCode);
+            if (verifyRes && verifyRes.status === 'success') {
+                const selectedThemeObj = THEME_CATALOG.find((t) => t.id === form.theme) || THEME_CATALOG[0];
+
+                registerMerchantSignup({
+                    ...form,
+                    email: cleanEmail,
+                    slug,
+                    accent: selectedThemeObj.accent,
+                });
+
+                showToast('Email verified! Boutique registration submitted.', 'success');
+                setIsOtpModalOpen(false);
+                navigate('/pending-approval');
+            } else {
+                showToast(verifyRes?.message || 'Invalid or expired 6-digit code', 'error');
+            }
+        } catch (err) {
+            showToast(err?.message || 'Verification failed. Please check the code.', 'error');
+        } finally {
+            setIsVerifyingOtp(false);
+        }
     };
 
     const inputClass =
@@ -86,24 +187,23 @@ const SignupPage = () => {
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black text-white">Apply for Brand Storefront</h1>
                     <p className="text-xs text-slate-400">
-                        Submit your boutique details. Our Super Admin team will review and approve your merchant portal.
+                        Submit your boutique details. You will receive a 6-digit verification code to confirm your email.
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
-                    
+                <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/50 border border-slate-800 rounded-3xl p-6 sm:p-8">
                     {/* Section 1: Brand Info */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-extrabold text-white flex items-center gap-2 border-b border-slate-800 pb-2.5">
-                            <Store size={17} className="text-indigo-400" /> 1. Brand Identity & URL
+                            <Store size={17} className="text-indigo-400" /> 1. Boutique Brand Identity
                         </h2>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Brand / Boutique Name *</label>
+                                <label className={labelClass}>Brand Store Name *</label>
                                 <input
                                     required
-                                    placeholder="e.g. Maison de Noir"
+                                    placeholder="e.g. Urban Silk Studio"
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                                     className={inputClass}
@@ -111,7 +211,7 @@ const SignupPage = () => {
                             </div>
 
                             <div>
-                                <label className={labelClass}>Fashion Category</label>
+                                <label className={labelClass}>Fashion Specialty / Niche *</label>
                                 <select
                                     value={form.category}
                                     onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -142,7 +242,7 @@ const SignupPage = () => {
                         </div>
                     </div>
 
-                    {/* Section 2: Owner Contact */}
+                    {/* Section 2: Owner Contact & Credentials */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-extrabold text-white flex items-center gap-2 border-b border-slate-800 pb-2.5">
                             <User size={17} className="text-pink-400" /> 2. Merchant Owner Information
@@ -161,7 +261,7 @@ const SignupPage = () => {
                             </div>
 
                             <div>
-                                <label className={labelClass}>Business Email *</label>
+                                <label className={labelClass}>Business Email * (OTP will be sent here)</label>
                                 <input
                                     type="email"
                                     required
@@ -187,7 +287,7 @@ const SignupPage = () => {
                                 <input
                                     type="password"
                                     required
-                                    placeholder="••••••••••••"
+                                    placeholder="At least 6 characters"
                                     value={form.password}
                                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                                     className={inputClass}
@@ -260,17 +360,105 @@ const SignupPage = () => {
                     {/* Submit CTA */}
                     <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <p className="text-xs text-slate-400">
-                            By clicking submit, your application is sent to Super Admin for approval.
+                            You will verify your email with a 6-digit code before submission.
                         </p>
                         <button
                             type="submit"
-                            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2"
+                            disabled={isSendingOtp}
+                            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                         >
-                            <Sparkles size={16} /> Submit Brand Application
+                            {isSendingOtp ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Sending 6-Digit Code...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={16} /> Continue to Verification
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>
             </main>
+
+            {/* 6-Digit Email Verification Modal */}
+            {isOtpModalOpen && (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+                        <button
+                            onClick={() => setIsOtpModalOpen(false)}
+                            className="absolute top-6 right-6 text-slate-500 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="text-center mb-6">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mx-auto flex items-center justify-center mb-3">
+                                <Mail size={24} />
+                            </div>
+                            <h2 className="text-xl font-black text-white">Verify Your Email</h2>
+                            <p className="text-xs text-slate-400 mt-1">
+                                We sent a 6-digit verification code to <span className="text-white font-bold">{form.email}</span>
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleVerifyOtpAndSignup} className="space-y-5">
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
+                                    Enter 6-Digit Code
+                                </label>
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                    placeholder="000000"
+                                    required
+                                    autoFocus
+                                    className="w-full bg-slate-950 border border-indigo-500/50 focus:border-indigo-500 rounded-2xl text-center py-3.5 text-2xl font-mono tracking-[0.4em] text-indigo-300 placeholder:text-slate-700 focus:outline-none transition shadow-inner"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isVerifyingOtp}
+                                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-xs shadow-xl shadow-indigo-600/30 transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                            >
+                                {isVerifyingOtp ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Verifying Code...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={16} /> Verify & Complete Registration
+                                    </>
+                                )}
+                            </button>
+
+                            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOtpModalOpen(false)}
+                                    className="hover:text-white transition"
+                                >
+                                    Edit Email
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={resendCooldown > 0 || isSendingOtp}
+                                    onClick={handleResendOtp}
+                                    className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition disabled:opacity-50"
+                                >
+                                    <RefreshCw size={12} className={isSendingOtp ? 'animate-spin' : ''} />
+                                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

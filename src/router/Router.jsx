@@ -7,6 +7,7 @@ import ProtectedRoute from '../components/auth/ProtectedRoute';
 import SubdomainGateway from './SubdomainGateway';
 import SignupPage from '../models/public/SignupPage';
 import LoginPage from '../models/public/LoginPage';
+import ForgotPasswordPage from '../models/public/ForgotPasswordPage';
 import PendingApprovalPage from '../models/public/PendingApprovalPage';
 
 // Super Admin Control Center
@@ -49,6 +50,7 @@ const Router = createBrowserRouter([
     { path: '/', Component: SubdomainGateway, ErrorBoundary: ErrorBoundary },
     { path: '/signup', Component: SignupPage, ErrorBoundary: ErrorBoundary },
     { path: '/login', Component: LoginPage, ErrorBoundary: ErrorBoundary },
+    { path: '/forgot-password', Component: ForgotPasswordPage, ErrorBoundary: ErrorBoundary },
     { path: '/pending-approval', Component: PendingApprovalPage, ErrorBoundary: ErrorBoundary },
 
     // ---------- Super Admin Control Center (Strictly Protected: Super Admin Only) ----------

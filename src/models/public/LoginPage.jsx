@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -7,7 +7,7 @@ import ToastContainer from '../../components/common/ToastContainer';
 const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, showToast } = useStore();
+    const { login, currentAuthUser, showToast } = useStore();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -16,6 +16,19 @@ const LoginPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fromRedirect = location.state?.from?.pathname;
+
+    // If already authenticated, immediately route to the respective portal
+    useEffect(() => {
+        if (currentAuthUser) {
+            if (currentAuthUser.role === 'Super Admin') {
+                navigate('/panel', { replace: true });
+            } else if (currentAuthUser.status === 'Pending') {
+                navigate('/pending-approval', { replace: true });
+            } else {
+                navigate('/owner', { replace: true });
+            }
+        }
+    }, [currentAuthUser, navigate]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
@@ -37,14 +50,20 @@ const LoginPage = () => {
             const res = await login(cleanEmail, cleanPassword);
             if (res && res.success && res.user) {
                 const user = res.user;
-                if (fromRedirect) {
-                    navigate(fromRedirect, { replace: true });
-                } else if (user.role === 'Super Admin') {
-                    navigate('/panel');
+                if (user.role === 'Super Admin') {
+                    if (fromRedirect && fromRedirect.startsWith('/panel')) {
+                        navigate(fromRedirect, { replace: true });
+                    } else {
+                        navigate('/panel', { replace: true });
+                    }
                 } else if (user.status === 'Pending') {
-                    navigate('/pending-approval');
+                    navigate('/pending-approval', { replace: true });
                 } else {
-                    navigate('/owner');
+                    if (fromRedirect && fromRedirect.startsWith('/owner')) {
+                        navigate(fromRedirect, { replace: true });
+                    } else {
+                        navigate('/owner', { replace: true });
+                    }
                 }
             } else {
                 showToast(res?.message || 'Invalid credentials or account does not exist.', 'error');
@@ -120,6 +139,12 @@ const LoginPage = () => {
                                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                                     Password
                                 </label>
+                                <Link
+                                    to="/forgot-password"
+                                    className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition"
+                                >
+                                    Forgot password?
+                                </Link>
                             </div>
                             <div className="relative">
                                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />

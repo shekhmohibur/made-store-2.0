@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { CURRENCIES } from '../../utils/currency';
+import { getSubdomain } from '../../utils/subdomain';
 import ToastContainer from '../../components/common/ToastContainer';
 import GlobalSearchModal from '../../components/common/GlobalSearchModal';
 import CustomPaymentForm from '../../components/storefront/CustomPaymentForm';
@@ -297,11 +298,15 @@ const StorefrontLayout = () => {
             <header className="bg-white border-b border-slate-100 sticky top-10 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-8 py-5 flex flex-col items-center">
                     
-                    {/* Center Brand Logo (Zorka Haute Couture Typography) */}
-                    <Link to={`/shop/${shop.slug}`} className="text-center group mb-4">
-                        <h1 className="text-3xl sm:text-4xl font-serif tracking-[0.18em] font-normal text-slate-950 uppercase group-hover:opacity-75 transition">
-                            {shop.name || 'ZORKA'}
-                        </h1>
+                    {/* Center Brand Logo */}
+                    <Link to={`/shop/${shop.slug}`} className="text-center group mb-4 flex flex-col items-center">
+                        {shop.logo && (shop.logo.startsWith('http') || shop.logo.startsWith('data:')) ? (
+                            <img src={shop.logo} alt={shop.name} className="h-10 sm:h-12 max-w-[240px] object-contain mb-1" />
+                        ) : (
+                            <h1 className="text-3xl sm:text-4xl font-serif tracking-[0.18em] font-normal text-slate-950 uppercase group-hover:opacity-75 transition">
+                                {shop.name || 'Boutique Atelier'}
+                            </h1>
+                        )}
                         <p className="text-[9px] tracking-[0.35em] text-slate-400 uppercase mt-0.5 font-sans font-semibold">
                             {shop.tagline || 'HAUTE COUTURE & READY-TO-WEAR'}
                         </p>
@@ -356,17 +361,21 @@ const StorefrontLayout = () => {
                                 CONTACT
                             </NavLink>
                             <NavLink
-                                to={`/dress-shop`}
-                                className="hover:text-rose-600 transition py-1 text-rose-500"
+                                to={`/shop/${shop.slug}/track-order`}
+                                className={({ isActive }) =>
+                                    `py-1 transition ${isActive ? 'text-slate-950 border-b-2 border-slate-950' : 'hover:text-slate-950'}`
+                                }
                             >
-                                VIRAL DRESSES
+                                TRACK ORDER
                             </NavLink>
-                            <Link
-                                to={`/owner`}
-                                className="hover:text-slate-950 transition py-1 text-slate-400 font-normal"
-                            >
-                                MERCHANT PANEL ↗
-                            </Link>
+                            {currentAuthUser && (currentAuthUser.role === 'Super Admin' || currentAuthUser.role === 'Owner' || currentAuthUser.role === 'Merchant Admin') && (
+                                <Link
+                                    to="/owner"
+                                    className="hover:text-slate-950 transition py-1 text-slate-400 font-normal"
+                                >
+                                    MERCHANT PORTAL ↗
+                                </Link>
+                            )}
                         </div>
 
                         {/* Right Quick Action Icons */}
@@ -451,13 +460,6 @@ const StorefrontLayout = () => {
                                     className={({ isActive }) => `px-3 py-2.5 rounded-xl transition ${isActive ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-slate-100'}`}
                                 >
                                     Track Order 🚚
-                                </NavLink>
-                                <NavLink
-                                    to={`/dress-shop`}
-                                    onClick={() => setIsMobileNavOpen(false)}
-                                    className="px-3 py-2.5 rounded-xl text-pink-600 bg-pink-50 hover:bg-pink-100 transition"
-                                >
-                                    Viral Dresses 👗
                                 </NavLink>
                             </nav>
                         </div>

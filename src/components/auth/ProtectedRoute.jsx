@@ -22,10 +22,10 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
     // 3. Role Restriction Check
     if (allowedRoles.length > 0 && !allowedRoles.includes(currentAuthUser.role)) {
         // If an approved merchant tries to access Super Admin panel, bounce them to their Owner portal
-        if (currentAuthUser.role === 'Owner') {
+        if (currentAuthUser.role === 'Owner' || currentAuthUser.role === 'Merchant' || currentAuthUser.role === 'Merchant Admin') {
             return <Navigate to="/owner" replace />;
         }
-        // If a Super Admin tries to access a restricted owner sub-path without shops
+        // If a Super Admin tries to access a restricted route
         if (currentAuthUser.role === 'Super Admin') {
             return <Navigate to="/panel" replace />;
         }
