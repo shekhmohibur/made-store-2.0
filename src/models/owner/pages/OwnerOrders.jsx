@@ -61,46 +61,46 @@ const OwnerOrders = () => {
             </div>
 
             {/* Metric Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500">Total Boutique Orders</p>
-                    <p className="text-2xl font-extrabold text-slate-900 mt-1">{orders.length}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Total Orders</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5 sm:mt-1">{orders.length}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500">Awaiting Fulfillment</p>
-                    <p className="text-2xl font-extrabold text-amber-600 mt-1">{pendingCount}</p>
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Awaiting Fulfillment</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-amber-600 mt-0.5 sm:mt-1">{pendingCount}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500">In Transit / Processing</p>
-                    <p className="text-2xl font-extrabold text-blue-600 mt-1">{processingCount}</p>
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">In Transit / Processing</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-blue-600 mt-0.5 sm:mt-1">{processingCount}</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500">Gross Sales Value</p>
-                    <p className="text-2xl font-extrabold text-emerald-600 mt-1">${totalRev.toLocaleString()}</p>
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Gross Sales Value</p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-0.5 sm:mt-1">${totalRev.toLocaleString()}</p>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
-                <div className="relative w-full md:w-80">
+            <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative w-full sm:w-80">
                     <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="search"
                         placeholder="Search order ID, customer, address..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+                        className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition"
                     />
                 </div>
 
-                <div className="flex items-center gap-2.5 w-full md:w-auto">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold shrink-0">
                         <Filter size={14} /> Status:
                     </div>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 cursor-pointer focus:outline-none"
+                        className="w-full sm:w-auto px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 cursor-pointer focus:outline-none"
                     >
                         <option value="All">All Statuses</option>
                         {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -110,7 +110,7 @@ const OwnerOrders = () => {
 
             {/* Orders Table */}
             {filteredOrders.length === 0 ? (
-                <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-400">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center text-slate-400">
                     <ShoppingCart size={36} className="mx-auto mb-2 opacity-30 text-indigo-400" />
                     <p className="font-bold text-slate-700 text-base">No customer orders found</p>
                     <p className="text-xs text-slate-400 mt-1">Orders placed by customers on your live storefront will appear here.</p>
@@ -118,7 +118,7 @@ const OwnerOrders = () => {
             ) : (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm min-w-[760px]">
                             <thead>
                                 <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/70">
                                     <th className="px-6 py-4">Order ID</th>

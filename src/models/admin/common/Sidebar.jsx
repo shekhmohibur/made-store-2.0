@@ -1,14 +1,16 @@
 import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard, Store, PlusCircle, Users, Settings,
-    X, Clock
+    X, Clock, LogOut, ShoppingCart, TrendingUp,
+    Megaphone, ShieldCheck, Database
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 
 const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
-    const { shops, users } = useStore();
+    const { shops, users, orders, logout } = useStore();
 
     const pendingCount = shops.filter((s) => s.status === 'Pending').length;
+    const pendingOrderCount = orders.filter((o) => o.paymentStatus === 'Pending Verification' || (o.trxId && o.paymentStatus !== 'Paid')).length;
 
     const navItems = [
         { to: '/panel', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -20,11 +22,20 @@ const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
             badgeColor: 'bg-amber-500 text-slate-950 font-black',
         },
         {
+            to: '/panel/orders',
+            label: 'Global Orders',
+            icon: ShoppingCart,
+            badge: pendingOrderCount > 0 ? String(pendingOrderCount) : (orders.length > 0 ? String(orders.length) : null),
+            badgeColor: pendingOrderCount > 0 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-700 text-slate-200',
+        },
+        {
             to: '/panel/shops',
             label: 'Clothing Shops',
             icon: Store,
             badge: String(shops.length),
         },
+        { to: '/panel/analytics', label: 'Analytics & Financials', icon: TrendingUp },
+        { to: '/panel/announcements', label: 'Broadcast Notices', icon: Megaphone },
         { to: '/panel/create-shop', label: 'Provision Boutique', icon: PlusCircle },
         {
             to: '/panel/users',
@@ -32,6 +43,8 @@ const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
             icon: Users,
             badge: String(users.length),
         },
+        { to: '/panel/audit', label: 'Security & Audit Logs', icon: ShieldCheck },
+        { to: '/panel/database', label: 'Database Studio', icon: Database },
         { to: '/panel/settings', label: 'Platform Settings', icon: Settings },
     ];
 
@@ -55,7 +68,7 @@ const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
             {/* Sidebar Container */}
             <aside
                 className={`
-                    fixed top-10 bottom-0 left-0 z-40
+                    fixed top-0 bottom-0 left-0 z-40
                     bg-slate-900 border-r border-slate-800 text-slate-200
                     flex flex-col justify-between transition-all duration-300 ease-in-out
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -66,18 +79,18 @@ const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
                 <div>
                     <div className="h-16 px-5 border-b border-slate-800 flex items-center justify-between">
                         <NavLink to="/panel" className="flex items-center gap-3 group">
-                            <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform shrink-0">
-                                K
+                            <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform shrink-0">
+                                T
                             </span>
                             {!isCollapsed && (
                                 <div className="leading-tight overflow-hidden">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="font-extrabold text-sm tracking-tight text-white">Kaizer Admin</span>
+                                        <span className="font-extrabold text-sm tracking-tight text-white">Trivora Admin</span>
                                         <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-md border border-indigo-500/30">
                                             v2.0
                                         </span>
                                     </div>
-                                    <p className="text-[11px] text-slate-500 font-medium">Clothing SaaS Engine</p>
+                                    <p className="text-[11px] text-slate-500 font-medium">Fashion Cloud & Boutique OS</p>
                                 </div>
                             )}
                         </NavLink>
@@ -165,6 +178,16 @@ const Sidebar = ({ isMobileOpen, onCloseMobile, isCollapsed }) => {
                             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Platform Operational" />
                         </div>
                     )}
+
+                    <button
+                        type="button"
+                        onClick={() => logout()}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/15 border border-rose-500/20 transition ${isCollapsed ? 'justify-center px-0' : ''}`}
+                        title="Sign Out Session"
+                    >
+                        <LogOut size={15} />
+                        {!isCollapsed && <span>Sign Out</span>}
+                    </button>
                 </div>
             </aside>
         </>

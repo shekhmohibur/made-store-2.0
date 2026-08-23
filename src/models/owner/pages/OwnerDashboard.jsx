@@ -84,14 +84,14 @@ const OwnerDashboard = () => {
             </div>
 
             {/* Published Live Subdomain & Domain Routing Hub */}
-            <div className="bg-slate-900 text-white rounded-3xl p-5 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                    <span className="w-11 h-11 rounded-2xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-lg">
+            <div className="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-lg shrink-0">
                         🌐
                     </span>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Published Merchant Subdomain:</span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Published Merchant Subdomain:</span>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                                 <CheckCircle2 size={11} /> Live & Active
                             </span>
@@ -100,30 +100,30 @@ const OwnerDashboard = () => {
                             href={`https://${shop.slug}.trivora.top`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-base font-extrabold text-white hover:text-indigo-300 transition font-mono flex items-center gap-1.5 mt-0.5"
+                            className="text-sm sm:text-base font-extrabold text-white hover:text-indigo-300 transition font-mono flex items-center gap-1.5 mt-0.5 break-all"
                         >
                             <span>https://{shop.slug}.trivora.top</span>
-                            <ArrowUpRight size={16} className="text-indigo-400" />
+                            <ArrowUpRight size={15} className="text-indigo-400 shrink-0" />
                         </a>
-                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 break-all">
                             Owner Portal: <span className="text-slate-200 font-bold">https://{shop.slug}.trivora.top/owner</span>
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                     <a
                         href={`https://${shop.slug}.trivora.top`}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5"
+                        className="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5"
                     >
                         <span>Open Customer Store</span>
                         <ArrowUpRight size={14} />
                     </a>
                     <Link
                         to={`/shop/${shop.slug}`}
-                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition"
+                        className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl text-center transition"
                     >
                         Direct Preview
                     </Link>
@@ -131,26 +131,26 @@ const OwnerDashboard = () => {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                 {stats.map((s, i) => (
                     <Link
                         key={i}
                         to={s.to}
-                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all group"
+                        className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs hover:shadow-md transition-all group"
                     >
                         <div className="flex items-center justify-between">
                             <span
-                                className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform"
+                                className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform"
                                 style={{ backgroundColor: accent }}
                             >
                                 {s.icon}
                             </span>
-                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${s.isWarning ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                            <span className={`inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full border ${s.isWarning ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
                                 <TrendingUp size={13} /> {s.delta}
                             </span>
                         </div>
-                        <div className="mt-4">
-                            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{s.value}</p>
+                        <div className="mt-3 sm:mt-4">
+                            <p className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{s.value}</p>
                             <p className="text-xs font-semibold text-slate-500 mt-1">{s.label}</p>
                         </div>
                     </Link>
@@ -158,18 +158,18 @@ const OwnerDashboard = () => {
             </div>
 
             {/* Low Stock Alerts & Orders */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 
                 {/* Recent Orders */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                         <div>
-                            <h3 className="font-bold text-slate-900">Recent Customer Orders</h3>
-                            <p className="text-xs text-slate-500">Manage fulfillment & delivery status</p>
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base">Recent Customer Orders</h3>
+                            <p className="text-[11px] sm:text-xs text-slate-500">Manage fulfillment & delivery status</p>
                         </div>
                         <Link
                             to="/panel/owner/orders"
-                            className="text-xs font-bold hover:underline"
+                            className="text-xs font-bold hover:underline shrink-0"
                             style={{ color: accent }}
                         >
                             View all ({orders.length}) →
@@ -177,36 +177,36 @@ const OwnerDashboard = () => {
                     </div>
 
                     {orders.length === 0 ? (
-                        <div className="p-12 text-center text-slate-400">
+                        <div className="p-8 sm:p-12 text-center text-slate-400">
                             <ShoppingCart size={36} className="mx-auto mb-2 opacity-30 text-indigo-400" />
                             <p className="font-semibold text-slate-700">No orders received yet</p>
                             <p className="text-xs text-slate-400 mt-1">Share your storefront link to start generating sales.</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm min-w-[560px]">
                                 <thead>
                                     <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/80">
-                                        <th className="px-6 py-3.5">Order ID</th>
-                                        <th className="px-6 py-3.5">Customer</th>
-                                        <th className="px-6 py-3.5">Items</th>
-                                        <th className="px-6 py-3.5">Total</th>
-                                        <th className="px-6 py-3.5">Status</th>
+                                        <th className="px-4 sm:px-6 py-3">Order ID</th>
+                                        <th className="px-4 sm:px-6 py-3">Customer</th>
+                                        <th className="px-4 sm:px-6 py-3">Items</th>
+                                        <th className="px-4 sm:px-6 py-3">Total</th>
+                                        <th className="px-4 sm:px-6 py-3">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {orders.slice(0, 5).map((o) => (
                                         <tr key={o.id} className="hover:bg-slate-50/70 transition">
-                                            <td className="px-6 py-3.5 font-mono font-bold text-xs text-slate-800">{o.id}</td>
-                                            <td className="px-6 py-3.5">
+                                            <td className="px-4 sm:px-6 py-3 font-mono font-bold text-xs text-slate-800">{o.id}</td>
+                                            <td className="px-4 sm:px-6 py-3">
                                                 <p className="font-semibold text-slate-900 text-xs">{o.customer}</p>
                                                 <p className="text-[11px] text-slate-400">{o.email}</p>
                                             </td>
-                                            <td className="px-6 py-3.5 text-xs text-slate-600">
+                                            <td className="px-4 sm:px-6 py-3 text-xs text-slate-600">
                                                 {o.items?.length || 1} item(s)
                                             </td>
-                                            <td className="px-6 py-3.5 font-bold text-slate-900">${o.total}</td>
-                                            <td className="px-6 py-3.5">
+                                            <td className="px-4 sm:px-6 py-3 font-bold text-slate-900">${o.total}</td>
+                                            <td className="px-4 sm:px-6 py-3">
                                                 <select
                                                     value={o.status}
                                                     onChange={(e) => updateOrderStatus(o.id, e.target.value)}

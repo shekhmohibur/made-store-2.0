@@ -56,7 +56,7 @@ const OwnerProducts = () => {
         setModalProduct(prod);
     };
 
-    const handleSaveProduct = (e) => {
+    const handleSaveProduct = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
 
@@ -85,9 +85,9 @@ const OwnerProducts = () => {
         };
 
         if (modalProduct && modalProduct.id) {
-            updateProduct(shop.id, modalProduct.id, data);
+            await updateProduct(shop.id, modalProduct.id, data);
         } else {
-            addProduct(shop.id, data);
+            await addProduct(shop.id, data);
         }
         setModalProduct(null);
     };

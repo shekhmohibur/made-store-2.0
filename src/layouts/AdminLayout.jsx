@@ -6,7 +6,6 @@ import Sidebar from '../models/admin/common/Sidebar';
 import Breadcrumbs from '../models/admin/common/Breadcrumbs';
 import ToastContainer from '../components/common/ToastContainer';
 import GlobalSearchModal from '../components/common/GlobalSearchModal';
-import DemoRoleBar from '../components/common/DemoRoleBar';
 import { findPageByPath } from '../router/routes';
 
 const AdminLayout = () => {
@@ -17,12 +16,11 @@ const AdminLayout = () => {
     // Update document title
     useEffect(() => {
         const page = findPageByPath(location.pathname);
-        document.title = `${page ? page.label : 'Super Admin'} · Kaizer Commerce`;
+        document.title = `${page ? page.label : 'Super Admin'} · Trivora Commerce`;
     }, [location.pathname]);
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-            <DemoRoleBar />
             <GlobalSearchModal />
             <ToastContainer />
 
@@ -34,7 +32,7 @@ const AdminLayout = () => {
             />
 
             {/* Right Main Content Container (offset by sidebar width) */}
-            <div className={`transition-all duration-300 flex flex-col min-h-[calc(100vh-2.5rem)] ${isCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+            <div className={`transition-all duration-300 flex flex-col min-h-screen ${isCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
                 
                 {/* Sticky Navbar at top of main content */}
                 <Navbar

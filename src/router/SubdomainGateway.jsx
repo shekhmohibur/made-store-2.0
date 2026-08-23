@@ -21,12 +21,9 @@ const SubdomainGateway = () => {
 
         // If visitor is at the root '/' of a subdomain, route directly to the store
         if (location.pathname === '/') {
-            const matchedShop = getShopBySlug(detectedSubdomain);
-            if (matchedShop || shops.length > 0) {
-                navigate(`/shop/${detectedSubdomain}`, { replace: true });
-            }
+            navigate(`/shop/${detectedSubdomain}`, { replace: true });
         }
-    }, [detectedSubdomain, location.pathname, getShopBySlug, shops, navigate]);
+    }, [detectedSubdomain, location.pathname, navigate]);
 
     // If on main platform domain, render normal SaaS landing page
     return <LandingPage />;

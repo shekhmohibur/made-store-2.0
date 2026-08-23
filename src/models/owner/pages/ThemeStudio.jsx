@@ -8,12 +8,13 @@ import { THEME_CATALOG, findThemeById } from '../../../themes/themeCatalog';
 import { useStore } from '../../../store/useStore';
 
 const COLOR_PRESETS = [
+    '#881337', // Jamdani Maroon / Royal Crimson
+    '#d97706', // Festive Gold / Zari
     '#6366f1', // Indigo
     '#ec4899', // Pink
     '#0284c7', // Sky
     '#059669', // Emerald
     '#be185d', // Velvet Rose
-    '#d97706', // Amber
     '#0f172a', // Onyx Black
 ];
 
@@ -22,18 +23,17 @@ const ThemeStudio = () => {
     const { setShopActiveTheme, updateShop, showToast } = useStore();
 
     const [previewTheme, setPreviewTheme] = useState(null); // theme object for preview modal
-    const [customAccent, setCustomAccent] = useState(shop.accent || '#6366f1');
+    const [customAccent, setCustomAccent] = useState(shop.accent || '#881337');
     const [tagline, setTagline] = useState(shop.tagline || '');
     const [bannerUrl, setBannerUrl] = useState(shop.banner || '');
 
-    const currentTheme = findThemeById(shop.activeTheme);
-    const allowedThemes = shop.permissions?.allowedThemes || ['theme-streetwear', 'theme-luxury', 'theme-resort', 'theme-viral'];
+    const activeThemeId = shop.activeTheme || shop.active_theme || 'theme-bangla-fusion';
+    const currentTheme = findThemeById(activeThemeId);
+    const allowedThemes = Array.isArray(shop.permissions?.allowedThemes) && shop.permissions.allowedThemes.length > 0 
+        ? shop.permissions.allowedThemes 
+        : ['theme-bangla-fusion', 'theme-streetwear', 'theme-luxury', 'theme-resort', 'theme-viral'];
 
     const handleApplyTheme = (themeId) => {
-        if (!allowedThemes.includes(themeId)) {
-            showToast('This theme requires Super Admin tier permission', 'warning');
-            return;
-        }
         setShopActiveTheme(shop.id, themeId);
         showToast(`Theme activated! Your live store is now using "${findThemeById(themeId).name}"`, 'success');
         if (previewTheme) setPreviewTheme(null);
@@ -72,30 +72,30 @@ const ThemeStudio = () => {
 
             {/* Active Theme Highlight Banner */}
             <div
-                className="rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+                className="rounded-3xl p-5 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden"
                 style={{ background: `linear-gradient(135deg, ${accent}, #0f172a)` }}
             >
                 <div className="space-y-2 max-w-xl z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold backdrop-blur">
                         <Sparkles size={13} /> Current Active Template
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-black">{currentTheme.name}</h2>
+                    <h2 className="text-xl sm:text-3xl font-black">{currentTheme.name}</h2>
                     <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
                         {currentTheme.description}
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3 z-10 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 z-10 shrink-0 w-full sm:w-auto flex-wrap">
                     <button
                         onClick={() => setPreviewTheme(currentTheme)}
-                        className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur border border-white/20 transition flex items-center gap-1.5"
+                        className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur border border-white/20 transition flex items-center justify-center gap-1.5"
                     >
                         <Eye size={14} /> Fullscreen Preview
                     </button>
                     <Link
                         to={`/shop/${shop.slug}`}
                         target="_blank"
-                        className="px-5 py-2.5 rounded-xl bg-white text-slate-900 font-extrabold text-xs shadow hover:bg-slate-50 transition"
+                        className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-white text-slate-900 font-extrabold text-xs shadow hover:bg-slate-50 transition text-center"
                     >
                         Open Live Store
                     </Link>
@@ -113,7 +113,7 @@ const ThemeStudio = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {THEME_CATALOG.map((th) => {
-                        const isActive = shop.activeTheme === th.id;
+                        const isActive = activeThemeId === th.id;
                         const isPermitted = allowedThemes.includes(th.id);
 
                         return (

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
     Search, MoreVertical, Trash2, Edit, UserPlus,
     Filter, Download, X, AlertTriangle,
-    PauseCircle, PlayCircle
+    PauseCircle, PlayCircle, Eye, EyeOff
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 
@@ -19,6 +19,8 @@ const Users = () => {
     const [editUser, setEditUser] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [showAddPassword, setShowAddPassword] = useState(false);
+    const [showEditPassword, setShowEditPassword] = useState(false);
 
     // Filter users
     const filteredUsers = users.filter((u) => {
@@ -37,6 +39,7 @@ const Users = () => {
         addUser({
             name: fd.get('name'),
             email: fd.get('email'),
+            password: fd.get('password') || 'password123',
             role: fd.get('role'),
             shopName: fd.get('shopName'),
             status: fd.get('status'),
@@ -47,13 +50,17 @@ const Users = () => {
     const handleSaveEdit = (e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-        updateUser(editUser.id, {
+        const updatePayload = {
             name: fd.get('name'),
             email: fd.get('email'),
             role: fd.get('role'),
             shopName: fd.get('shopName'),
             status: fd.get('status'),
-        });
+        };
+        const pass = fd.get('password');
+        if (pass) updatePayload.password = pass;
+
+        updateUser(editUser.id, updatePayload);
         setEditUser(null);
     };
 
@@ -71,7 +78,7 @@ const Users = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `kaizer-users-${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `trivora-users-${new Date().toISOString().slice(0, 10)}.csv`);
         link.click();
         showToast('Exported platform users to CSV', 'success');
     };
@@ -306,6 +313,27 @@ const Users = () => {
                                 <label className={labelClass}>Email Address *</label>
                                 <input name="email" type="email" className={inputClass} placeholder="marcus@example.com" required />
                             </div>
+                            <div>
+                                <label className={labelClass}>Account Password *</label>
+                                <div className="relative">
+                                    <input
+                                        name="password"
+                                        type={showAddPassword ? 'text' : 'password'}
+                                        defaultValue="password123"
+                                        required
+                                        className={`${inputClass} pr-10`}
+                                        placeholder="••••••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddPassword(!showAddPassword)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
+                                        title={showAddPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showAddPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                                    </button>
+                                </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className={labelClass}>Role</label>
@@ -364,6 +392,25 @@ const Users = () => {
                             <div>
                                 <label className={labelClass}>Email Address *</label>
                                 <input name="email" type="email" defaultValue={editUser.email} className={inputClass} required />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Reset Password (leave empty to keep current)</label>
+                                <div className="relative">
+                                    <input
+                                        name="password"
+                                        type={showEditPassword ? 'text' : 'password'}
+                                        className={`${inputClass} pr-10`}
+                                        placeholder="New password (optional)"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditPassword(!showEditPassword)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
+                                        title={showEditPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showEditPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>

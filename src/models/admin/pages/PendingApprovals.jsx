@@ -45,19 +45,7 @@ const PendingApprovals = () => {
         );
     };
 
-    const handleSeedDemoSignup = () => {
-        registerMerchantSignup({
-            name: 'Aura Streetwear Co',
-            category: 'Streetwear & Contemporary',
-            tagline: 'Raw heavyweight fleece & oversized cuts',
-            ownerName: 'Kenji Sato',
-            email: `kenji.${Date.now().toString().slice(-3)}@aurastreet.com`,
-            phone: '+1 (555) 302-8819',
-            theme: 'theme-streetwear',
-            plan: 'Growth',
-        });
-        showToast('Created new pending merchant application!', 'success');
-    };
+    const { syncWithBackend, isSyncing } = useStore();
 
     return (
         <div className="space-y-6">
@@ -78,12 +66,22 @@ const PendingApprovals = () => {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleSeedDemoSignup}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow transition active:scale-95"
-                >
-                    <Sparkles size={15} className="text-amber-400" /> Simulate Brand Signup
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => syncWithBackend(false)}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow transition active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                        {isSyncing ? 'Syncing...' : 'Refresh Queue'}
+                    </button>
+                    <Link
+                        to="/panel/shops"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow transition active:scale-95"
+                    >
+                        Active Boutiques ({shops.length})
+                    </Link>
+                </div>
             </div>
 
             {/* Content */}
@@ -97,17 +95,17 @@ const PendingApprovals = () => {
                         There are currently no merchant signups waiting in the queue. All brand stores have been approved and activated.
                     </p>
                     <div className="pt-2 flex items-center justify-center gap-3">
-                        <button
-                            onClick={handleSeedDemoSignup}
-                            className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow hover:bg-indigo-700 transition"
-                        >
-                            Create Demo Signup Application
-                        </button>
                         <Link
                             to="/panel/shops"
-                            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow hover:bg-indigo-700 transition"
                         >
                             View Active Boutiques ({shops.length})
+                        </Link>
+                        <Link
+                            to="/panel/create-shop"
+                            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                        >
+                            Create Storefront Manually
                         </Link>
                     </div>
                 </div>
@@ -138,7 +136,7 @@ const PendingApprovals = () => {
                                             </span>
                                         </div>
                                         <p className="text-xs text-slate-500 font-mono">
-                                            https://{shp.slug}.kaizer.store
+                                            https://{shp.slug}.trivora.top
                                         </p>
                                     </div>
                                 </div>

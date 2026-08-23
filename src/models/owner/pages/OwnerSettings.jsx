@@ -189,17 +189,17 @@ const OwnerSettings = () => {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
                     <Link
                         to={`/shop/${shop.slug}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition shadow-xs"
                     >
                         <ExternalLink size={14} /> Preview Storefront
                     </Link>
                     <button
                         type="submit"
-                        className="px-6 py-2.5 rounded-xl text-white font-extrabold text-xs shadow-md transition active:scale-95 flex items-center gap-2"
+                        className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl text-white font-extrabold text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-2"
                         style={{ backgroundColor: accent }}
                     >
                         <Save size={15} /> Save All Changes
@@ -208,7 +208,7 @@ const OwnerSettings = () => {
             </div>
 
             {/* 1. Brand Identity */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 shadow-xs space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                         <MapPin size={20} />

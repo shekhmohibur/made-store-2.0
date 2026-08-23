@@ -7,16 +7,8 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 
-// Production: Empty customer CRM directory ready for real patrons
+// Production: Real customer CRM directory
 const initialSeedCustomers = [];
-
-/*
-// DEMO CUSTOMERS (COMMENTED OUT FOR PRODUCTION)
-const demoCustomers = [
-    { id: 'CUST-101', name: 'Jessica Miller', email: 'jessica.m@example.com', tier: 'Platinum', ordersCount: 8, lifetimeSpend: 1420.00 },
-    { id: 'CUST-102', name: 'Alexander Wright', email: 'a.wright@fashionmail.com', tier: 'Gold', ordersCount: 5, lifetimeSpend: 840.00 },
-];
-*/
 
 const OwnerCustomers = () => {
     const { shop, accent } = useOutletContext();

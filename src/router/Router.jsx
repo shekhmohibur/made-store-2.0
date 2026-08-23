@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 // Error Boundary & Common Components
 import ErrorBoundary from '../components/common/ErrorBoundary';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 import SubdomainGateway from './SubdomainGateway';
 import SignupPage from '../models/public/SignupPage';
@@ -12,6 +13,11 @@ import PendingApprovalPage from '../models/public/PendingApprovalPage';
 import AdminLayout from '../layouts/AdminLayout';
 import Dashboard from '../models/admin/pages/Dashboard';
 import PendingApprovals from '../models/admin/pages/PendingApprovals';
+import AdminOrders from '../models/admin/pages/AdminOrders';
+import AdminAnalytics from '../models/admin/pages/AdminAnalytics';
+import AdminAnnouncements from '../models/admin/pages/AdminAnnouncements';
+import AdminAuditLogs from '../models/admin/pages/AdminAuditLogs';
+import AdminDatabase from '../models/admin/pages/AdminDatabase';
 import Shops from '../models/admin/pages/Shops';
 import CreateShop from '../models/admin/pages/CreateShop';
 import Users from '../models/admin/pages/Users';
@@ -45,25 +51,38 @@ const Router = createBrowserRouter([
     { path: '/login', Component: LoginPage, ErrorBoundary: ErrorBoundary },
     { path: '/pending-approval', Component: PendingApprovalPage, ErrorBoundary: ErrorBoundary },
 
-    // ---------- Super Admin Control Center ----------
+    // ---------- Super Admin Control Center (Strictly Protected: Super Admin Only) ----------
     {
         path: '/panel',
-        Component: AdminLayout,
+        element: (
+            <ProtectedRoute allowedRoles={['Super Admin']}>
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         ErrorBoundary: ErrorBoundary,
         children: [
             { path: '', Component: Dashboard },
             { path: 'approvals', Component: PendingApprovals },
+            { path: 'orders', Component: AdminOrders },
             { path: 'shops', Component: Shops },
+            { path: 'analytics', Component: AdminAnalytics },
+            { path: 'announcements', Component: AdminAnnouncements },
             { path: 'create-shop', Component: CreateShop },
             { path: 'users', Component: Users },
+            { path: 'audit', Component: AdminAuditLogs },
+            { path: 'database', Component: AdminDatabase },
             { path: 'settings', Component: Settings },
         ],
     },
 
-    // ---------- Merchant Owner Panel (/owner) ----------
+    // ---------- Merchant Owner Panel (/owner - Protected: Store Owner & Super Admin) ----------
     {
         path: '/owner',
-        Component: OwnerLayout,
+        element: (
+            <ProtectedRoute allowedRoles={['Super Admin', 'Merchant Admin', 'Owner']}>
+                <OwnerLayout />
+            </ProtectedRoute>
+        ),
         ErrorBoundary: ErrorBoundary,
         children: [
             { path: '', Component: OwnerDashboard },
@@ -79,7 +98,11 @@ const Router = createBrowserRouter([
     // ---------- Backwards Compatibility Route (/panel/owner) ----------
     {
         path: '/panel/owner',
-        Component: OwnerLayout,
+        element: (
+            <ProtectedRoute allowedRoles={['Super Admin', 'Merchant Admin', 'Owner']}>
+                <OwnerLayout />
+            </ProtectedRoute>
+        ),
         ErrorBoundary: ErrorBoundary,
         children: [
             { path: '', Component: OwnerDashboard },

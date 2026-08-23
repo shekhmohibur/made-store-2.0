@@ -1,4 +1,4 @@
-// Multi-Currency Exchange Rate Engine for Kaizer Commerce
+// Multi-Currency Exchange Rate Engine for Trivora Commerce
 
 export const CURRENCIES = {
     USD: { code: 'USD', symbol: '$', rate: 1.0, name: 'US Dollar', flag: '🇺🇸' },

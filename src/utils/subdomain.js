@@ -1,5 +1,5 @@
 /**
- * Kaizer Commerce Multi-Tenant Subdomain Resolver
+ * Trivora Commerce Multi-Tenant Subdomain Resolver
  * Configured Architecture:
  * - Backend API: https://clothing.trivora.top/api
  * - Frontend SaaS Platform: https://clothbrand.trivora.top

@@ -1,6 +1,5 @@
 import { useRouteError, Link } from 'react-router-dom';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
-import DemoRoleBar from './DemoRoleBar';
 
 const ErrorBoundary = () => {
     const error = useRouteError();
@@ -19,8 +18,6 @@ const ErrorBoundary = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-            <DemoRoleBar />
-            
             <main className="flex-1 flex items-center justify-center p-6 text-center">
                 <div className="bg-white p-8 sm:p-12 rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full space-y-6 animate-in fade-in zoom-in-95">
                     <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center shadow-inner border border-rose-100">

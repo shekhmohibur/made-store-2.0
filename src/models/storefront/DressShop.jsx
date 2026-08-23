@@ -7,7 +7,6 @@ import {
 import { useStore } from '../../store/useStore';
 import ToastContainer from '../../components/common/ToastContainer';
 import GlobalSearchModal from '../../components/common/GlobalSearchModal';
-import DemoRoleBar from '../../components/common/DemoRoleBar';
 
 const OCCASIONS = ['All Silhouettes', 'Wedding Guest', 'Cocktail & Party', 'Boho Chic', 'Evening Gala'];
 
@@ -91,7 +90,6 @@ const DressShop = () => {
 
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-pink-600 selection:text-white">
-            <DemoRoleBar />
             <GlobalSearchModal />
             <ToastContainer />
 

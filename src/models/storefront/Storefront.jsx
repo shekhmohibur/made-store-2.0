@@ -40,14 +40,6 @@ const BRANDS = ['ZARA', 'MANGO', 'PULL&BEAR', 'H&M', 'BERSHKA', 'MASSIMO DUTTI']
 // Production: Live buyer activity
 const RECENT_BUYERS = [];
 
-/*
-// DEMO RECENT BUYERS (COMMENTED OUT FOR PRODUCTION)
-const demoBuyers = [
-    { name: 'Sarah M.', city: 'Miami, FL', item: 'Handmade Flared Wool Jacket', time: '2 mins ago' },
-    { name: 'Chloe T.', city: 'Atlanta, GA', item: 'Coat With Wraparound Collar', time: '4 mins ago' },
-];
-*/
-
 const Storefront = () => {
     const { shop, addToCart, formatPrice = (p) => `$${Number(p).toFixed(2)}` } = useOutletContext();
     const { toggleWishlist, isWishlisted, showToast } = useStore();

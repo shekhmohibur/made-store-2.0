@@ -1,5 +1,5 @@
 /**
- * Kaizer Commerce - Production API Client Service
+ * Trivora Commerce - Production API Client Service
  * Connects React Frontend to the Shared cPanel PHP MySQL REST API Backend.
  */
 
@@ -9,7 +9,7 @@ const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'https://clothing.trivor
 
 let activeApiUrl = (() => {
     try {
-        return localStorage.getItem('kaizer_custom_api_url') || DEFAULT_API_URL;
+        return localStorage.getItem('trivora_custom_api_url') || DEFAULT_API_URL;
     } catch {
         return DEFAULT_API_URL;
     }
@@ -61,7 +61,7 @@ export const ApiService = {
         if (!newUrl) return;
         activeApiUrl = newUrl.trim().replace(/\/+$/, '');
         try {
-            localStorage.setItem('kaizer_custom_api_url', activeApiUrl);
+            localStorage.setItem('trivora_custom_api_url', activeApiUrl);
         } catch (e) {
             console.error('Failed to save API URL:', e);
         }
@@ -108,7 +108,7 @@ export const ApiService = {
     },
 
     // -------------------------------------------------------------
-    // USERS & ROLES
+    // USERS & AUTHENTICATION
     // -------------------------------------------------------------
     async getUsers() {
         return request('/users.php');
@@ -121,11 +121,37 @@ export const ApiService = {
         });
     },
 
+    async updateUser(userId, updateData) {
+        return request(`/users.php?id=${encodeURIComponent(userId)}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+    },
+
+    async deleteUser(userId) {
+        return request(`/users.php?id=${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+        });
+    },
+
+    async login(email, password = '') {
+        return request('/users.php?action=login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+    },
+
     async loginUser(email, password = '') {
         return request('/users.php?action=login', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
         });
+    },
+
+    async logoutUser() {
+        return request('/users.php?action=logout', {
+            method: 'POST',
+        }).catch(() => {});
     },
 
     // -------------------------------------------------------------
@@ -211,7 +237,7 @@ export const ApiService = {
     },
 
     // -------------------------------------------------------------
-    // CUSTOMERS CRM
+    // CUSTOMERS CRM & AUTHENTICATION
     // -------------------------------------------------------------
     async getCustomers(shopId = null) {
         const query = shopId ? `?shop_id=${encodeURIComponent(shopId)}` : '';
@@ -220,6 +246,20 @@ export const ApiService = {
 
     async saveCustomer(customerData) {
         return request('/customers.php', {
+            method: 'POST',
+            body: JSON.stringify(customerData),
+        });
+    },
+
+    async loginCustomer(email, password) {
+        return request('/customers.php?action=login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+    },
+
+    async registerCustomer(customerData) {
+        return request('/customers.php?action=register', {
             method: 'POST',
             body: JSON.stringify(customerData),
         });

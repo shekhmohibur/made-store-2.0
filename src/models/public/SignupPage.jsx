@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { THEME_CATALOG } from '../../themes/themeCatalog';
 import { useStore } from '../../store/useStore';
-import DemoRoleBar from '../../components/common/DemoRoleBar';
 import ToastContainer from '../../components/common/ToastContainer';
 
 const CATEGORIES = [
@@ -63,16 +62,15 @@ const SignupPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-            <DemoRoleBar />
             <ToastContainer />
 
             {/* Header */}
             <header className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2.5">
                     <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-lg">
-                        K
+                        T
                     </span>
-                    <span className="font-extrabold text-white text-base">Kaizer Commerce</span>
+                    <span className="font-extrabold text-white text-base">Trivora Commerce</span>
                 </Link>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                     <span>Already have an approved store?</span>
@@ -128,7 +126,7 @@ const SignupPage = () => {
                                 <div className="flex items-center px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-400 font-mono">
                                     <span className="text-slate-600">https://</span>
                                     <span className="text-indigo-400 font-bold">{slug}</span>
-                                    <span className="text-slate-600">.kaizer.store</span>
+                                    <span className="text-slate-600">.trivora.top</span>
                                 </div>
                             </div>
 

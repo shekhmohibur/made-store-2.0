@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import {
-    Sparkles, ArrowRight, Shield, ExternalLink, CheckCircle2
+    Sparkles, ArrowRight, Shield, ExternalLink, CheckCircle2, LogOut, LayoutDashboard
 } from 'lucide-react';
 import { THEME_CATALOG } from '../../themes/themeCatalog';
 import ToastContainer from '../../components/common/ToastContainer';
-import DemoRoleBar from '../../components/common/DemoRoleBar';
+import { useStore } from '../../store/useStore';
 
 const PLANS = [
     {
@@ -40,22 +40,22 @@ const PLANS = [
 ];
 
 const LandingPage = () => {
+    const { currentAuthUser, logout } = useStore();
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-            <DemoRoleBar />
             <ToastContainer />
 
             {/* Public Header */}
-            <header className="sticky top-10 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+            <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
                     <Link to="/" className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-pink-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-indigo-500/25">
-                            K
+                            T
                         </span>
                         <div>
-                            <span className="font-black text-xl tracking-tight text-white">Kaizer Commerce</span>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Multi-Tenant Fashion SaaS</p>
+                            <span className="font-black text-xl tracking-tight text-white">Trivora Commerce</span>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Multi-Tenant Fashion Cloud</p>
                         </div>
                     </Link>
 
@@ -63,24 +63,49 @@ const LandingPage = () => {
                         <a href="#themes" className="hover:text-white transition">Themes & Templates</a>
                         <a href="#how-it-works" className="hover:text-white transition">Platform Workflow</a>
                         <a href="#pricing" className="hover:text-white transition">Pricing Plans</a>
-                        <Link to="/panel" className="hover:text-indigo-400 transition flex items-center gap-1">
-                            <Shield size={14} /> Super Admin
-                        </Link>
+                        {currentAuthUser?.role === 'Super Admin' && (
+                            <Link to="/panel" className="hover:text-indigo-400 transition flex items-center gap-1">
+                                <Shield size={14} /> Super Admin
+                            </Link>
+                        )}
                     </nav>
 
                     <div className="flex items-center gap-3">
-                        <Link
-                            to="/login"
-                            className="px-4 py-2 rounded-xl text-slate-300 hover:text-white text-xs font-bold transition"
-                        >
-                            Log In
-                        </Link>
-                        <Link
-                            to="/signup"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition active:scale-95"
-                        >
-                            <Sparkles size={14} /> Create Brand Store
-                        </Link>
+                        {currentAuthUser ? (
+                            <>
+                                <Link
+                                    to={currentAuthUser.role === 'Super Admin' ? '/panel' : currentAuthUser.status === 'Pending' ? '/pending-approval' : '/owner'}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600/25 hover:bg-indigo-600/40 border border-indigo-500/40 text-indigo-300 text-xs font-bold transition"
+                                >
+                                    <LayoutDashboard size={14} />
+                                    <span>{currentAuthUser.role === 'Super Admin' ? 'Admin Panel' : 'Merchant Portal'}</span>
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => logout()}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-bold transition cursor-pointer"
+                                    title="Sign Out Session"
+                                >
+                                    <LogOut size={13} />
+                                    <span className="hidden sm:inline">Sign Out</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/login"
+                                    className="px-4 py-2 rounded-xl text-slate-300 hover:text-white text-xs font-bold transition"
+                                >
+                                    Log In
+                                </Link>
+                                <Link
+                                    to="/signup"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition active:scale-95"
+                                >
+                                    <Sparkles size={14} /> Create Brand Store
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
@@ -115,10 +140,17 @@ const LandingPage = () => {
                             <Sparkles size={18} /> Apply for Brand Storefront <ArrowRight size={16} />
                         </Link>
                         <Link
-                            to="/panel"
+                            to={currentAuthUser ? (currentAuthUser.role === 'Super Admin' ? '/panel' : currentAuthUser.status === 'Pending' ? '/pending-approval' : '/owner') : '/login'}
                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold text-sm transition"
                         >
-                            <Shield size={18} className="text-indigo-400" /> Super Admin Approvals
+                            <Shield size={18} className="text-indigo-400" />
+                            <span>
+                                {currentAuthUser
+                                    ? currentAuthUser.role === 'Super Admin'
+                                        ? 'Enter Super Admin Panel'
+                                        : 'Open Merchant Portal'
+                                    : 'Merchant & Admin Sign In'}
+                            </span>
                         </Link>
                     </div>
 
@@ -149,7 +181,7 @@ const LandingPage = () => {
                 <div className="max-w-7xl mx-auto space-y-12">
                     <div className="text-center max-w-2xl mx-auto space-y-3">
                         <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Platform Lifecycle</span>
-                        <h2 className="text-3xl sm:text-4xl font-black text-white">How Kaizer Multi-Tenant Works</h2>
+                        <h2 className="text-3xl sm:text-4xl font-black text-white">How Trivora Multi-Tenant Works</h2>
                         <p className="text-sm text-slate-400">
                             A secure, approval-first platform connecting clothing founders with high-performance eCommerce tools.
                         </p>
@@ -269,7 +301,7 @@ const LandingPage = () => {
                                             to={th.id === 'theme-viral' ? '/shop/fb-dress-store' : th.id === 'theme-resort' ? '/shop/linen-and-co' : '/shop/urban-threads'}
                                             className="inline-flex items-center gap-1.5 text-xs font-bold text-white hover:text-indigo-400"
                                         >
-                                            <ExternalLink size={13} /> View Live Storefront Demo
+                                            <ExternalLink size={13} /> Explore Live Storefront
                                         </Link>
                                         <Link
                                             to={`/signup?theme=${th.id}`}
@@ -346,9 +378,9 @@ const LandingPage = () => {
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow">
-                            K
+                            T
                         </span>
-                        <span className="font-bold text-slate-300">Kaizer Commerce 2.0</span>
+                        <span className="font-bold text-slate-300">Trivora Commerce 2.0</span>
                         <span>· Super Admin & Multi-Tenant Clothing SaaS</span>
                     </div>
 

@@ -113,8 +113,9 @@ const CreateShop = () => {
                             <div className="sm:col-span-2">
                                 <label className={labelClass}>Generated Live URL Slug</label>
                                 <div className="flex items-center px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono text-slate-600">
-                                    <span>https://kaizercommerce.com/shop/</span>
-                                    <span className="font-bold text-indigo-600 ml-1">{slug}</span>
+                                    <span>https://</span>
+                                    <span className="font-bold text-indigo-600">{slug}</span>
+                                    <span>.trivora.top</span>
                                 </div>
                             </div>
 

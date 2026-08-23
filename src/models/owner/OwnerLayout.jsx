@@ -1,32 +1,28 @@
 import { useState } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Package, ShoppingCart, BadgePercent, Store,
     ExternalLink, ShieldCheck, X, Menu, Search, Palette, Settings,
-    Users
+    Users, LogOut
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import ToastContainer from '../../components/common/ToastContainer';
 import GlobalSearchModal from '../../components/common/GlobalSearchModal';
-import DemoRoleBar from '../../components/common/DemoRoleBar';
 
 const OwnerLayout = () => {
     const location = useLocation();
-    const { shops, currentAuthUser, setIsGlobalSearchOpen } = useStore();
+    const navigate = useNavigate();
+    const { shops, currentAuthUser, setIsGlobalSearchOpen, logout } = useStore();
 
-    // Default to the shop matching user's shopId, or first active shop
-    const [shopId, setShopId] = useState(() => {
-        if (currentAuthUser?.shopId && currentAuthUser.shopId !== 'ALL') {
-            const found = shops.find((s) => s.id === currentAuthUser.shopId);
-            if (found) return found.id;
-        }
-        const active = shops.find((s) => s.status === 'Active') || shops[0];
-        return active ? active.id : '';
-    });
-
+    const [selectedShopId, setSelectedShopId] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const shop = shops.find((s) => s.id === shopId) || shops[0] || null;
+    const activeShopId = selectedShopId ||
+        (currentAuthUser?.shopId && currentAuthUser.shopId !== 'ALL' ? currentAuthUser.shopId : '') ||
+        (shops.find((s) => s.status === 'Active')?.id) ||
+        (shops[0]?.id || '');
+
+    const shop = shops.find((s) => s.id === activeShopId) || shops[0] || null;
 
     // Detect if we're on /owner or /panel/owner
     const basePath = location.pathname.startsWith('/panel/owner') ? '/panel/owner' : '/owner';
@@ -44,7 +40,6 @@ const OwnerLayout = () => {
     if (!shop) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans">
-                <DemoRoleBar />
                 <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md">
                     <Store size={40} className="mx-auto text-indigo-600 mb-3" />
                     <h2 className="text-xl font-bold text-slate-800">No Boutique Authorized</h2>
@@ -61,7 +56,6 @@ const OwnerLayout = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-            <DemoRoleBar />
             <GlobalSearchModal />
             <ToastContainer />
 
@@ -76,7 +70,7 @@ const OwnerLayout = () => {
             {/* Left Fixed Merchant Sidebar */}
             <aside
                 className={`
-                    fixed top-10 bottom-0 left-0 z-40 w-64 bg-white border-r border-slate-200
+                    fixed top-0 bottom-0 left-0 z-40 w-64 bg-white border-r border-slate-200
                     flex flex-col justify-between transition-transform duration-300 ease-in-out
                     ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
                 `}
@@ -134,25 +128,35 @@ const OwnerLayout = () => {
                     </nav>
                 </div>
 
-                {/* Bottom: Owner Info Card */}
-                <div className="border-t border-slate-100 p-3 bg-slate-50/50 space-y-2">
+                {/* Bottom: Owner Info Card & Sign Out */}
+                <div className="border-t border-slate-100 p-3 bg-slate-50/50 space-y-2.5">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-                            {shop.ownerName?.slice(0, 2).toUpperCase() || 'OW'}
+                            {currentAuthUser?.avatar || (shop.ownerName?.slice(0, 2).toUpperCase() || 'OW')}
                         </div>
                         <div className="leading-tight min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-900 truncate">{shop.ownerName}</p>
-                            <p className="text-[10px] text-slate-400 truncate">{shop.email}</p>
+                            <p className="text-xs font-bold text-slate-900 truncate">{currentAuthUser?.name || shop.ownerName}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{currentAuthUser?.email || shop.email}</p>
                         </div>
                     </div>
+                    <button
+                        onClick={() => {
+                            logout();
+                            navigate('/login');
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition border border-rose-200/50 cursor-pointer"
+                    >
+                        <LogOut size={13} />
+                        Sign Out
+                    </button>
                 </div>
             </aside>
 
             {/* Right Main Column (offset by sidebar width) */}
-            <div className="transition-all duration-300 md:pl-64 flex flex-col min-h-[calc(100vh-2.5rem)]">
+            <div className="transition-all duration-300 md:pl-64 flex flex-col min-h-screen">
                 
                 {/* Sticky Merchant Top Navbar */}
-                <header className="sticky top-10 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs flex items-center justify-between px-4 sm:px-6">
+                <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs flex items-center justify-between px-4 sm:px-6">
                     
                     {/* Left: Hamburger on mobile + Switch Store Selector */}
                     <div className="flex items-center gap-3">
@@ -168,7 +172,7 @@ const OwnerLayout = () => {
                             <span className="text-xs font-semibold text-slate-500">Store:</span>
                             <select
                                 value={shop.id}
-                                onChange={(e) => setShopId(e.target.value)}
+                                onChange={(e) => setSelectedShopId(e.target.value)}
                                 className="bg-transparent text-xs font-bold text-slate-800 cursor-pointer focus:outline-none pr-2"
                             >
                                 {shops.map((s) => (
@@ -205,6 +209,16 @@ const OwnerLayout = () => {
                             <ShieldCheck size={14} />
                             <span className="hidden sm:inline">Super Admin</span>
                         </Link>
+
+                        <button
+                            type="button"
+                            onClick={() => logout()}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer"
+                            title="Sign Out Session"
+                        >
+                            <LogOut size={14} />
+                            <span className="hidden sm:inline">Sign Out</span>
+                        </button>
                     </div>
                 </header>
 

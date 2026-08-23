@@ -1,5 +1,5 @@
 /**
- * Ultra-Lightweight Client-Side Image Compressor for Kaizer Commerce
+ * Ultra-Lightweight Client-Side Image Compressor for Trivora Commerce
  * Resizes large camera photos (3MB-10MB) down to 20KB-50KB using HTML5 Canvas.
  */
 

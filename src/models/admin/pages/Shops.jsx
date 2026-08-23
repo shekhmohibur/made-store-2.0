@@ -94,7 +94,7 @@ const Shops = () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'kaizer_shops_export.csv');
+        link.setAttribute('download', 'trivora_shops_export.csv');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -406,13 +406,13 @@ const Shops = () => {
                             <label className={labelClass}>Active Live Theme Template</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 {THEME_CATALOG.map((th) => {
-                                    const isSel = (permissionsShop.activeTheme || 'theme-streetwear') === th.id;
+                                    const isSel = (permissionsShop.activeTheme || permissionsShop.active_theme || 'theme-bangla-fusion') === th.id;
                                     return (
                                         <div
                                             key={th.id}
                                             onClick={() => {
                                                 setShopActiveTheme(permissionsShop.id, th.id);
-                                                setPermissionsShop({ ...permissionsShop, activeTheme: th.id });
+                                                setPermissionsShop({ ...permissionsShop, activeTheme: th.id, active_theme: th.id });
                                             }}
                                             className={`p-3 rounded-2xl border cursor-pointer flex items-center gap-3 transition ${isSel ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20' : 'border-slate-200 hover:bg-slate-50'}`}
                                         >

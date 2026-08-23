@@ -229,7 +229,7 @@ const GlobalSearchModal = () => {
                             <span>Press <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-200 font-mono text-[10px]">↵</kbd> to select</span>
                             <span><kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-200 font-mono text-[10px]">ESC</kbd> to close</span>
                         </div>
-                        <span className="font-medium text-indigo-600">Kaizer Search</span>
+                        <span className="font-medium text-indigo-600">Trivora Search</span>
                     </div>
                 </motion.div>
             </div>

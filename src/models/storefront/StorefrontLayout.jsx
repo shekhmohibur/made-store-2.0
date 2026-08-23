@@ -9,11 +9,13 @@ import { useStore } from '../../store/useStore';
 import { CURRENCIES } from '../../utils/currency';
 import ToastContainer from '../../components/common/ToastContainer';
 import GlobalSearchModal from '../../components/common/GlobalSearchModal';
-import DemoRoleBar from '../../components/common/DemoRoleBar';
 import CustomPaymentForm from '../../components/storefront/CustomPaymentForm';
 
 const StorefrontLayout = () => {
-    const { slug } = useParams();
+    const { slug: paramSlug } = useParams();
+    const detectedSubdomain = getSubdomain();
+    const slug = paramSlug || detectedSubdomain || '';
+
     const {
         shops = [],
         cart = [],
@@ -68,7 +70,6 @@ const StorefrontLayout = () => {
     if (!shop) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans">
-                <DemoRoleBar />
                 <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md">
                     <h2 className="text-xl font-bold text-slate-800">Store Not Found</h2>
                     <p className="text-xs text-slate-500 mt-1 mb-6">The requested fashion store could not be located.</p>
@@ -239,7 +240,6 @@ const StorefrontLayout = () => {
 
     return (
         <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-slate-900 selection:text-white">
-            <DemoRoleBar />
             <GlobalSearchModal />
             <ToastContainer />
 
@@ -635,7 +635,7 @@ const StorefrontLayout = () => {
                 </div>
 
                 <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-4">
-                    <p>© 2025 {shop.name}. Powered by Kaizer Multi-Tenant Commerce Engine.</p>
+                    <p>© 2026 {shop.name}. Powered by Trivora Multi-Tenant Commerce Engine.</p>
                     <div className="flex items-center gap-4">
                         <Link to={`/shop/${shop.slug}/about`} className="hover:underline">Privacy Policy</Link>
                         <span>·</span>

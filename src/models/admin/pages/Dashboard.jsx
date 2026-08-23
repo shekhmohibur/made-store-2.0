@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Store, ShoppingCart, DollarSign, TrendingUp, Plus,
-    Package, Sparkles, ChevronRight, Activity
+    Package, Sparkles, ChevronRight, Activity, Megaphone,
+    ShieldCheck, Database
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
+import { formatCurrency } from '../../../utils/currency';
 
 const Dashboard = () => {
-    const { shops, orders, activities, showToast } = useStore();
+    const { shops, orders, activities, activeCurrency, showToast } = useStore();
     const [timeframe, setTimeframe] = useState('30D');
     const [chartMetric, setChartMetric] = useState('revenue');
     const [hoveredBar, setHoveredBar] = useState(null);
@@ -19,14 +21,17 @@ const Dashboard = () => {
     const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
     const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0.00';
 
+    const pendingOrdersCount = orders.filter((o) => o.paymentStatus === 'Pending Verification' || (o.trxId && o.paymentStatus !== 'Paid')).length;
+
     const stats = [
         {
-            label: 'Total Platform Revenue',
-            value: `$${totalRevenue.toLocaleString()}`,
+            label: 'Total Platform GMV',
+            value: formatCurrency(totalRevenue, activeCurrency),
             delta: '+18.4%',
             icon: <DollarSign size={22} />,
             color: 'from-emerald-500 to-teal-600',
             sub: 'Across all tenant shops',
+            link: '/panel/analytics',
         },
         {
             label: 'Active Clothing Shops',
@@ -35,14 +40,16 @@ const Dashboard = () => {
             icon: <Store size={22} />,
             color: 'from-indigo-500 to-purple-600',
             sub: 'SaaS multi-tenant boutiques',
+            link: '/panel/shops',
         },
         {
             label: 'Total Orders Processed',
             value: totalOrders,
-            delta: '+12.1%',
+            delta: pendingOrdersCount > 0 ? `${pendingOrdersCount} pending verif` : '+12.1%',
             icon: <ShoppingCart size={22} />,
             color: 'from-blue-500 to-cyan-600',
-            sub: 'Average $ ' + avgOrderValue + ' / order',
+            sub: 'Avg ' + formatCurrency(Number(avgOrderValue), activeCurrency) + ' / order',
+            link: '/panel/orders',
         },
         {
             label: 'Catalog Items Listed',
@@ -51,6 +58,7 @@ const Dashboard = () => {
             icon: <Package size={22} />,
             color: 'from-amber-500 to-orange-600',
             sub: 'Fashion & apparel inventory',
+            link: '/panel/shops',
         },
     ];
 
@@ -122,12 +130,52 @@ const Dashboard = () => {
                 <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
             </div>
 
+            {/* Quick Action Navigation Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <Link to="/panel/orders" className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm hover:border-indigo-300 transition flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                    <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600"><ShoppingCart size={15} /></span>
+                    <div>
+                        <p className="truncate">Global Orders</p>
+                        <p className="text-[10px] text-slate-400 font-normal">{orders.length} total</p>
+                    </div>
+                </Link>
+                <Link to="/panel/analytics" className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm hover:border-emerald-300 transition flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                    <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600"><TrendingUp size={15} /></span>
+                    <div>
+                        <p className="truncate">Analytics</p>
+                        <p className="text-[10px] text-slate-400 font-normal">GMV & Take Rate</p>
+                    </div>
+                </Link>
+                <Link to="/panel/announcements" className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm hover:border-purple-300 transition flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                    <span className="p-2 rounded-xl bg-purple-50 text-purple-600"><Megaphone size={15} /></span>
+                    <div>
+                        <p className="truncate">Broadcasts</p>
+                        <p className="text-[10px] text-slate-400 font-normal">System Notices</p>
+                    </div>
+                </Link>
+                <Link to="/panel/audit" className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm hover:border-amber-300 transition flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                    <span className="p-2 rounded-xl bg-amber-50 text-amber-600"><ShieldCheck size={15} /></span>
+                    <div>
+                        <p className="truncate">Audit Logs</p>
+                        <p className="text-[10px] text-slate-400 font-normal">Security Trail</p>
+                    </div>
+                </Link>
+                <Link to="/panel/database" className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm hover:border-blue-300 transition flex items-center gap-2.5 text-xs font-bold text-slate-800 col-span-2 sm:col-span-1">
+                    <span className="p-2 rounded-xl bg-blue-50 text-blue-600"><Database size={15} /></span>
+                    <div>
+                        <p className="truncate">Database</p>
+                        <p className="text-[10px] text-slate-400 font-normal">MySQL Studio</p>
+                    </div>
+                </Link>
+            </div>
+
             {/* Metric KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
                 {stats.map((s, i) => (
-                    <div
+                    <Link
                         key={i}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all group"
+                        to={s.link}
+                        className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group block"
                     >
                         <div className="flex items-center justify-between">
                             <span className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}>
@@ -142,7 +190,7 @@ const Dashboard = () => {
                             <p className="text-sm font-semibold text-slate-600 mt-0.5">{s.label}</p>
                             <p className="text-xs text-slate-400 mt-1">{s.sub}</p>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
 
@@ -310,8 +358,8 @@ const Dashboard = () => {
                             <h3 className="font-bold text-slate-800">Recent Customer Orders</h3>
                             <p className="text-xs text-slate-500">Real-time checkout transactions</p>
                         </div>
-                        <Link to="/panel/owner" className="text-xs font-semibold text-indigo-600 hover:underline">
-                            Owner Order Manager →
+                        <Link to="/panel/orders" className="text-xs font-semibold text-indigo-600 hover:underline">
+                            View Global Orders Ledger →
                         </Link>
                     </div>
 

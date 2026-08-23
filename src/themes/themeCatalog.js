@@ -1,4 +1,4 @@
-// Theme & Template Catalog for Kaizer Commerce Multi-Tenant SaaS
+// Theme & Template Catalog for Trivora Commerce Multi-Tenant SaaS
 // Curated Luxury & SaaS Professional Color Schemes & Aesthetics
 
 export const THEME_CATALOG = [
