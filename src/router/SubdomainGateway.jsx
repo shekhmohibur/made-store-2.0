@@ -12,7 +12,6 @@ import LandingPage from '../models/public/LandingPage';
 const SubdomainGateway = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { getShopBySlug, shops } = useStore();
 
     const detectedSubdomain = getSubdomain();
 

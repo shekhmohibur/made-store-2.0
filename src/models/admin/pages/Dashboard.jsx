@@ -62,35 +62,71 @@ const Dashboard = () => {
         },
     ];
 
-    // Dynamic Mock Data for Chart based on timeframe
-    const chartData = {
-        '7D': [
-            { label: 'Mon', revenue: 420, orders: 4 },
-            { label: 'Tue', revenue: 780, orders: 7 },
-            { label: 'Wed', revenue: 610, orders: 5 },
-            { label: 'Thu', revenue: 950, orders: 9 },
-            { label: 'Fri', revenue: 1240, orders: 12 },
-            { label: 'Sat', revenue: 1680, orders: 15 },
-            { label: 'Sun', revenue: 1420, orders: 13 },
-        ],
-        '30D': [
-            { label: 'Wk 1', revenue: 3400, orders: 32 },
-            { label: 'Wk 2', revenue: 4800, orders: 45 },
-            { label: 'Wk 3', revenue: 6200, orders: 58 },
-            { label: 'Wk 4', revenue: 7900, orders: 71 },
-        ],
-        '12M': [
-            { label: 'Jan', revenue: 12400, orders: 110 },
-            { label: 'Feb', revenue: 15800, orders: 140 },
-            { label: 'Mar', revenue: 18200, orders: 165 },
-            { label: 'Apr', revenue: 21900, orders: 190 },
-            { label: 'May', revenue: 26400, orders: 230 },
-            { label: 'Jun', revenue: 31000, orders: 280 },
-            { label: 'Jul', revenue: 38500, orders: 340 },
-            { label: 'Aug', revenue: 45200, orders: 410 },
-        ],
-    }[timeframe];
+    // Real Live Data for Chart dynamically calculated from actual orders
+    const getRealChartData = () => {
+        if (timeframe === '7D') {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            const last7 = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const dayLabel = days[d.getDay()];
+                const dateKey = d.toISOString().slice(0, 10);
+                const dayOrders = orders.filter((o) => (o.date || o.created_at || '').startsWith(dateKey));
+                const dayRev = dayOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+                last7.push({ label: dayLabel, revenue: dayRev, orders: dayOrders.length });
+            }
+            return last7;
+        }
 
+        if (timeframe === '30D') {
+            const weeks = [
+                { label: 'Wk 1', revenue: 0, orders: 0 },
+                { label: 'Wk 2', revenue: 0, orders: 0 },
+                { label: 'Wk 3', revenue: 0, orders: 0 },
+                { label: 'Wk 4', revenue: 0, orders: 0 },
+            ];
+            const now = Date.now();
+            orders.forEach((o) => {
+                const orderTime = o.created_at ? new Date(o.created_at).getTime() : (o.date ? new Date(o.date).getTime() : now);
+                const diffDays = Math.floor((now - orderTime) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 7) {
+                    weeks[3].revenue += Number(o.total) || 0;
+                    weeks[3].orders += 1;
+                } else if (diffDays <= 14) {
+                    weeks[2].revenue += Number(o.total) || 0;
+                    weeks[2].orders += 1;
+                } else if (diffDays <= 21) {
+                    weeks[1].revenue += Number(o.total) || 0;
+                    weeks[1].orders += 1;
+                } else if (diffDays <= 30) {
+                    weeks[0].revenue += Number(o.total) || 0;
+                    weeks[0].orders += 1;
+                }
+            });
+            return weeks;
+        }
+
+        // 12M
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentMonthIdx = new Date().getMonth();
+        const lastMonths = [];
+        for (let i = 11; i >= 0; i--) {
+            const mIdx = (currentMonthIdx - i + 12) % 12;
+            const mName = months[mIdx];
+            const mOrders = orders.filter((o) => {
+                if (!o.created_at && !o.date) return false;
+                const d = new Date(o.created_at || o.date);
+                return d.getMonth() === mIdx;
+            });
+            const mRev = mOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+            lastMonths.push({ label: mName, revenue: mRev, orders: mOrders.length });
+        }
+        return lastMonths;
+    };
+
+    const chartData = getRealChartData();
     const maxVal = Math.max(...chartData.map((d) => (chartMetric === 'revenue' ? d.revenue : d.orders))) || 1;
 
     // Calculate shop leaderboard

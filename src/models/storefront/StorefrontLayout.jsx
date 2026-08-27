@@ -29,6 +29,7 @@ const StorefrontLayout = () => {
         validateCoupon,
         showToast,
         setIsGlobalSearchOpen,
+        currentAuthUser,
     } = useStore();
 
     // Find active shop by slug or fallback to default
@@ -295,7 +296,7 @@ const StorefrontLayout = () => {
             </div>
 
             {/* Main Centered Luxury Header */}
-            <header className="bg-white border-b border-slate-100 sticky top-10 z-40">
+            <header className="bg-white/95 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 shadow-xs transition-all">
                 <div className="max-w-7xl mx-auto px-4 sm:px-8 py-5 flex flex-col items-center">
                     
                     {/* Center Brand Logo */}

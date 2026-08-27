@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-    Sparkles, Store, Palette, User, Shield, Mail, ArrowRight, Loader2,
-    CheckCircle2, X, RefreshCw, Lock
+    Sparkles, Store, Palette, User, Mail, Loader2,
+    CheckCircle2, X, RefreshCw
 } from 'lucide-react';
 import { THEME_CATALOG } from '../../themes/themeCatalog';
 import { ApiService } from '../../services/api';

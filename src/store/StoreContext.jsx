@@ -3,11 +3,15 @@ import { StoreContext } from './storeDefinition';
 import { formatCurrency } from '../utils/currency';
 import ApiService from '../services/api';
 
-// Purge all legacy demo/mock auth session keys on startup
+// Purge all legacy demo/mock auth session and user keys on startup
 try {
     ['kaizer_auth_user', 'kaizer_auth_user_v2', 'kaizer_auth_user_v3', 'kaizer_current_user', 'kaizer_session', 'kaizer_production_session_v5'].forEach((k) => {
         localStorage.removeItem(k);
     });
+    const cachedUsers = localStorage.getItem('trivora_users_v1');
+    if (cachedUsers && (cachedUsers.includes('Bengal Silk') || cachedUsers.includes('Urban Thread') || cachedUsers.includes('amina@resortwear'))) {
+        localStorage.removeItem('trivora_users_v1');
+    }
 } catch (e) {
     void e;
 }
@@ -95,10 +99,30 @@ const normalizeShop = (shop) => {
     };
 };
 
+export const normalizeUser = (u) => {
+    if (!u) return null;
+    return {
+        id: u.id || `USR-${Date.now()}`,
+        name: u.name || 'Merchant Owner',
+        email: u.email || '',
+        role: u.role || 'Owner',
+        shopName: u.shopName || u.shop_name || 'All Boutiques (Global)',
+        shopId: u.shopId || u.shop_id || 'ALL',
+        status: u.status || 'Active',
+        avatar: u.avatar || (u.name ? u.name.slice(0, 2).toUpperCase() : 'US'),
+        joined: u.joined || (u.created_at ? u.created_at.slice(0, 10) : '2026-01-01'),
+    };
+};
 
 export const StoreProvider = ({ children }) => {
     const [shops, setShops] = useState(() => (getStored(STORAGE_KEYS.SHOPS, []) || []).map(normalizeShop));
-    const [users, setUsers] = useState(() => getStored(STORAGE_KEYS.USERS, []));
+    const [users, setUsers] = useState(() => {
+        const stored = getStored(STORAGE_KEYS.USERS, []);
+        if (Array.isArray(stored) && stored.length > 0) {
+            return stored.map(normalizeUser).filter(Boolean);
+        }
+        return [];
+    });
     const [orders, setOrders] = useState(() => getStored(STORAGE_KEYS.ORDERS, []));
     const [coupons, setCoupons] = useState(() => getStored(STORAGE_KEYS.COUPONS, []));
     const [reviews, setReviews] = useState(() => getStored(STORAGE_KEYS.REVIEWS, []));
@@ -163,19 +187,19 @@ export const StoreProvider = ({ children }) => {
     const formatPrice = (usdAmount) => formatCurrency(usdAmount, activeCurrency);
 
     // Toast Manager
+    const showToast = useCallback((message, type = 'info') => {
+        const id = `toast-${toastCounter++}`;
+        setToasts((prev) => [...prev, { id, message, type }]);
+    }, []);
+
     const dismissToast = useCallback((id) => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
-    const showToast = useCallback((message, type = 'info', duration = 3500) => {
-        const id = `toast-${toastCounter++}`;
-        setToasts((prev) => [...prev, { id, message, type }]);
-        setTimeout(() => dismissToast(id), duration);
-    }, [dismissToast]);
-
-    const logActivity = (text, type = 'general') => {
-        const newAct = { id: `act-${toastCounter++}`, text, time: 'Just now', type };
-        setActivities((prev) => [newAct, ...prev.slice(0, 30)]);
+    const logActivity = (text, type = 'info') => {
+        const id = `act-${Date.now()}-${toastCounter++}`;
+        const newAct = { id, text, time: 'Just now', type };
+        setActivities((prev) => [newAct, ...prev.slice(0, 49)]);
     };
 
     // -------------------------------------------------------------
@@ -188,7 +212,7 @@ export const StoreProvider = ({ children }) => {
             if (health.online) {
                 setBackendStatus('connected');
 
-                // 1. Fetch live shops and products from MySQL
+                // 1. Fetch live shops, products, orders, and live users in parallel
                 const [shopRes, prodRes, orderRes, userRes] = await Promise.all([
                     ApiService.getShops().catch(() => null),
                     ApiService.getProducts().catch(() => null),
@@ -199,36 +223,27 @@ export const StoreProvider = ({ children }) => {
                 const allProducts = (prodRes && prodRes.status === 'success' && Array.isArray(prodRes.data)) ? prodRes.data : [];
 
                 if (shopRes && shopRes.status === 'success' && Array.isArray(shopRes.data) && shopRes.data.length > 0) {
-                    setShops((prev) => {
-                        const prevShopMap = new Map(prev.map((s) => [s.id, s]));
-                        const normalizedIncoming = shopRes.data.map((s) => {
-                            const norm = normalizeShop(s);
-                            const prevShop = prevShopMap.get(norm.id);
-                            const shopProds = allProducts.filter((p) => p.shop_id === norm.id || p.shopId === norm.id);
-                            if (shopProds.length > 0) {
-                                norm.products = shopProds;
-                            } else if (prevShop && Array.isArray(prevShop.products) && prevShop.products.length > 0) {
-                                norm.products = prevShop.products;
-                            } else {
-                                norm.products = [];
-                            }
-                            return norm;
-                        });
-
-                        const incomingIds = new Set(normalizedIncoming.map((s) => s.id));
-                        const localOnly = prev.filter((s) => !incomingIds.has(s.id));
-                        return [...normalizedIncoming, ...localOnly];
+                    const normalizedIncoming = shopRes.data.map((s) => {
+                        const norm = normalizeShop(s);
+                        const shopProds = allProducts.filter((p) => p.shop_id === norm.id || p.shopId === norm.id);
+                        if (shopProds.length > 0) {
+                            norm.products = shopProds;
+                        }
+                        return norm;
                     });
+
+                    setShops(normalizedIncoming);
                 }
 
                 // 2. Fetch live orders from MySQL
-                if (orderRes && orderRes.status === 'success' && Array.isArray(orderRes.data) && orderRes.data.length > 0) {
+                if (orderRes && orderRes.status === 'success' && Array.isArray(orderRes.data)) {
                     setOrders(orderRes.data);
                 }
 
-                // 3. Fetch live users
-                if (userRes && userRes.status === 'success' && Array.isArray(userRes.data) && userRes.data.length > 0) {
-                    setUsers(userRes.data);
+                // 3. Fetch live users strictly from MySQL database
+                if (userRes && userRes.status === 'success' && Array.isArray(userRes.data)) {
+                    const normalizedUsers = userRes.data.map(normalizeUser).filter(Boolean);
+                    setUsers(normalizedUsers);
                 }
 
                 setLastSyncedAt(new Date());
@@ -251,7 +266,7 @@ export const StoreProvider = ({ children }) => {
         }
     }, [showToast]);
 
-    // Automatic Sync on Initial Boot
+    // Automatic Sync on Initial Boot (Always queries live MySQL database)
     useEffect(() => {
         let isMounted = true;
         const initializeBackend = async () => {
@@ -260,10 +275,11 @@ export const StoreProvider = ({ children }) => {
                 if (isMounted) {
                     if (health.online) {
                         setBackendStatus('connected');
-                        const [shopRes, prodRes, orderRes] = await Promise.all([
+                        const [shopRes, prodRes, orderRes, userRes] = await Promise.all([
                             ApiService.getShops().catch(() => null),
                             ApiService.getProducts().catch(() => null),
                             ApiService.getOrders().catch(() => null),
+                            ApiService.getUsers().catch(() => null),
                         ]);
 
                         const allProducts = (prodRes && prodRes.status === 'success' && Array.isArray(prodRes.data)) ? prodRes.data : [];
@@ -278,15 +294,18 @@ export const StoreProvider = ({ children }) => {
                                 return norm;
                             });
 
-                            setShops((prev) => {
-                                const incomingIds = new Set(normalizedIncoming.map((s) => s.id));
-                                const localOnly = prev.filter((s) => !incomingIds.has(s.id));
-                                return [...normalizedIncoming, ...localOnly];
-                            });
+                            setShops(normalizedIncoming);
                         }
-                        if (isMounted && orderRes?.status === 'success' && Array.isArray(orderRes.data) && orderRes.data.length > 0) {
+
+                        if (isMounted && orderRes?.status === 'success' && Array.isArray(orderRes.data)) {
                             setOrders(orderRes.data);
                         }
+
+                        if (isMounted && userRes?.status === 'success' && Array.isArray(userRes.data)) {
+                            const normalizedUsers = userRes.data.map(normalizeUser).filter(Boolean);
+                            setUsers(normalizedUsers);
+                        }
+
                         setLastSyncedAt(new Date());
                     } else {
                         setBackendStatus('offline');

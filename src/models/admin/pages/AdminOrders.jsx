@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     ShoppingCart, Search, Download, CheckCircle2,
     Clock, Eye, Printer,
-    Store, DollarSign, X, Check, Copy
+    Store, DollarSign, X, Check, Copy, RefreshCw
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { formatCurrency } from '../../../utils/currency';
@@ -16,7 +16,13 @@ const STATUS_BADGES = {
 };
 
 const AdminOrders = () => {
-    const { orders, shops, updateOrderStatus, verifyOrderPayment, showToast, activeCurrency } = useStore();
+    const { orders, shops, updateOrderStatus, verifyOrderPayment, showToast, activeCurrency, isSyncing, syncWithBackend } = useStore();
+
+    useEffect(() => {
+        if (typeof syncWithBackend === 'function') {
+            syncWithBackend(true);
+        }
+    }, [syncWithBackend]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedShopId, setSelectedShopId] = useState('ALL');

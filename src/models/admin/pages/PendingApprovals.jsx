@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    CheckCircle2, Sparkles, User, Mail, Palette, X
+    CheckCircle2, Sparkles, User, Mail, Palette, X, RefreshCw
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { THEME_CATALOG } from '../../../themes/themeCatalog';
 
 const PendingApprovals = () => {
-    const { shops, approveShop, rejectShop, showToast, registerMerchantSignup } = useStore();
+    const { shops, approveShop, rejectShop, showToast, registerMerchantSignup, isSyncing, syncWithBackend } = useStore();
 
     const [selectedShop, setSelectedShop] = useState(null); // Modal for approving with custom permissions
     const [allowedThemes, setAllowedThemes] = useState([
@@ -44,8 +44,6 @@ const PendingApprovals = () => {
             prev.includes(themeId) ? prev.filter((id) => id !== themeId) : [...prev, themeId]
         );
     };
-
-    const { syncWithBackend, isSyncing } = useStore();
 
     return (
         <div className="space-y-6">

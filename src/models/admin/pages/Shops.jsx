@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight,
     ChevronsLeft, ChevronsRight, Eye,
     AlertTriangle, X, ExternalLink, Download,
-    ArrowUpDown, Palette, CheckCircle2
+    ArrowUpDown, Palette, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { THEME_CATALOG } from '../../../themes/themeCatalog';
@@ -14,13 +14,19 @@ const STATUSES = ['Active', 'Pending', 'Suspended'];
 const PAGE_SIZE = 6;
 
 const Shops = () => {
-    const { shops, updateShop, deleteShop, setShopActiveTheme, updateShopPermissions, showToast } = useStore();
+    const { shops, updateShop, deleteShop, setShopActiveTheme, updateShopPermissions, showToast, isSyncing, syncWithBackend } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [planFilter, setPlanFilter] = useState('All');
     const [statusFilter, setStatusFilter] = useState('All');
     const [sortBy, setSortBy] = useState('name');
     const [sortDir, setSortDir] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        if (typeof syncWithBackend === 'function') {
+            syncWithBackend(true);
+        }
+    }, [syncWithBackend]);
 
     // Modals
     const [activeDetailShop, setActiveDetailShop] = useState(null);
