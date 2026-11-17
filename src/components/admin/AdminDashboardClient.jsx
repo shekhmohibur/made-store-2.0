@@ -11,13 +11,57 @@ import { formatPrice } from '@/lib/utils';
 
 const ORDER_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
-export function AdminDashboardClient({ initialProducts, initialCategories, initialOrders, stats }) {
+export function AdminDashboardClient({ initialProducts, initialCategories, initialOrders, stats, initialSlides = [], }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('products');
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [slideModalOpen, setSlideModalOpen] = useState(false);
+  const [slideForm, setSlideForm] = useState({
+    badge: '',
+    title: '',
+    subtitle: '',
+    image: '',
+    ctaLabel: 'Shop Collection',
+    ctaLink: '/shop',
+    secCtaLabel: '',
+    secCtaLink: '',
+    sortOrder: 0,
+  });
+
+  const handleCreateSlide = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const res = await fetch('/api/admin/slides', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(slideForm),
+    });
+    if (res.ok) {
+      setSlideForm({
+        badge: '',
+        title: '',
+        subtitle: '',
+        image: '',
+        ctaLabel: 'Shop Collection',
+        ctaLink: '/shop',
+        secCtaLabel: '',
+        secCtaLink: '',
+        sortOrder: 0,
+      });
+      setSlideModalOpen(false);
+      router.refresh();
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteSlide = async (id) => {
+    if (!confirm('Delete this homepage slide?')) return;
+    await fetch(`/api/admin/slides/${id}`, { method: 'DELETE' });
+    router.refresh();
+  };
   // Category Form State
   const [catName, setCatName] = useState('');
   const [catImage, setCatImage] = useState('');
@@ -141,9 +185,10 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
       </div>
 
       {/* Action Bar & Tabs */}
+{/* Action Bar & Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 pb-4">
         <div className="flex gap-2">
-          {['products', 'orders'].map((tab) => (
+          {['products', 'orders', 'slides'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -158,7 +203,11 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
           ))}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSlideModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            New Slide
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setCategoryModalOpen(true)}>
             <Plus className="h-4 w-4" />
             New Category
@@ -268,7 +317,7 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
         </div>
       )}
 
-      {/* Create Category Modal */}
+      {/* Category Modal */}
       <Modal
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
@@ -294,7 +343,148 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
         </form>
       </Modal>
 
-      {/* Create Product Modal */}
+{/* Slides Management Tab */}
+      {activeTab === 'slides' && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {initialSlides.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-dashed border-zinc-300 p-12 text-center text-sm text-zinc-500">
+              No custom slides yet. Click &ldquo;New Slide&rdquo; to add one to your homepage carousel.
+            </div>
+          ) : (
+            initialSlides.map((slide) => (
+              <div
+                key={slide.id}
+                className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xs"
+              >
+                <div className="relative aspect-[16/9] bg-zinc-100">
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="h-full w-full object-cover"
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-bold text-white">
+                    Order: {slide.sortOrder}
+                  </span>
+                </div>
+                <div className="p-4">
+                  {slide.badge && (
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                      {slide.badge}
+                    </p>
+                  )}
+                  <h3 className="mt-1 line-clamp-1 text-base font-bold text-zinc-900">
+                    {slide.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+                    {slide.subtitle}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
+                    <span className="text-xs font-medium text-zinc-600">
+                      {slide.ctaLabel} → {slide.ctaLink}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSlide(slide.id)}
+                      className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      title="Delete slide"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Create Hero Slide Modal */}
+      <Modal
+        isOpen={slideModalOpen}
+        onClose={() => setSlideModalOpen(false)}
+        title="Add Homepage Carousel Slide"
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleCreateSlide} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Top Badge (Optional)"
+              placeholder="NEW DROP 2026"
+              value={slideForm.badge}
+              onChange={(e) => setSlideForm({ ...slideForm, badge: e.target.value })}
+            />
+            <Input
+              label="Sort Order"
+              type="number"
+              value={slideForm.sortOrder}
+              onChange={(e) => setSlideForm({ ...slideForm, sortOrder: e.target.value })}
+            />
+          </div>
+
+          <Input
+            label="Headline Title"
+            placeholder="Elevated Streetwear Essentials."
+            value={slideForm.title}
+            onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
+            required
+          />
+
+          <Input
+            label="Subtitle (Optional)"
+            placeholder="Crafted from 420gsm combed cotton..."
+            value={slideForm.subtitle}
+            onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
+          />
+
+          <Input
+            label="Slide Image URL"
+            placeholder="https://images.unsplash.com/..."
+            value={slideForm.image}
+            onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
+            required
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Primary Button Text"
+              value={slideForm.ctaLabel}
+              onChange={(e) => setSlideForm({ ...slideForm, ctaLabel: e.target.value })}
+              required
+            />
+            <Input
+              label="Primary Button Link"
+              value={slideForm.ctaLink}
+              onChange={(e) => setSlideForm({ ...slideForm, ctaLink: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Secondary Button Text (Optional)"
+              placeholder="Explore Sale"
+              value={slideForm.secCtaLabel}
+              onChange={(e) =>
+                setSlideForm({ ...slideForm, secCtaLabel: e.target.value })
+              }
+            />
+            <Input
+              label="Secondary Button Link"
+              placeholder="/shop?sale=true"
+              value={slideForm.secCtaLink}
+              onChange={(e) =>
+                setSlideForm({ ...slideForm, secCtaLink: e.target.value })
+              }
+            />
+          </div>
+
+          <Button type="submit" isLoading={saving} className="w-full">
+            Publish Slide
+          </Button>
+        </form>
+      </Modal>
+
+      
+      {/* Product Modal */}
       <Modal
         isOpen={productModalOpen}
         onClose={() => setProductModalOpen(false)}
@@ -359,6 +549,7 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
               required
             />
           </div>
+          
 
           {/* Variants Matrix */}
           <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">

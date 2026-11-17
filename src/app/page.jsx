@@ -1,13 +1,16 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import { Button } from '@/components/ui/Button';
-import { ProductCard } from '@/components/ui/shared/ProductCard';
+import { HeroCarousel } from '@/components/shared/HeroCarousel';
+import { ProductCard } from '@/components/shared/ProductCard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [featuredProducts, categories] = await Promise.all([
+  const [slides, featuredProducts, categories] = await Promise.all([
+    prisma.heroSlide.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    }),
     prisma.product.findMany({
       where: { isActive: true, featured: true },
       include: { category: true, variants: true },
@@ -22,47 +25,8 @@ export default async function HomePage() {
 
   return (
     <main>
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-zinc-950 text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-28">
-          <div className="space-y-6">
-            <span className="inline-block rounded-full border border-zinc-700 bg-zinc-900 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-zinc-300">
-              Season 2026 Collection
-            </span>
-            <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
-              Tailored for everyday movement.
-            </h1>
-            <p className="max-w-lg text-base text-zinc-400 sm:text-lg">
-              Heavyweight organic cottons, structured outerwear, and clean minimalist silhouettes built to last.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link href="/shop">
-                <Button size="lg" className="bg-white text-zinc-950 hover:bg-zinc-200">
-                  Shop Collection
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/shop?sale=true">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-zinc-700 bg-transparent text-white hover:bg-zinc-900"
-                >
-                  Explore Sale
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-zinc-900">
-            <img
-              src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80"
-              alt="Minimalist clothing rack"
-              className="h-full w-full object-cover opacity-90"
-            />
-          </div>
-        </div>
-      </section>
+      {/* Dynamic Auto-Sliding Hero Carousel */}
+      <HeroCarousel slides={slides} interval={5000} />
 
       {/* Categories Grid */}
       {categories.length > 0 && (

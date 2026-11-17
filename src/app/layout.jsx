@@ -2,9 +2,9 @@ import { Inter } from 'next/font/google';
 import { SessionProvider } from 'next-auth/react';
 import { CartProvider } from '@/context/CartContext';
 import './globals.css';
-import { Navbar } from '@/components/ui/shared/Navbar';
-import { CartDrawer } from '@/components/ui/shared/CartDrawer';
-import { Footer } from '@/components/ui/shared/Footer';
+import { Navbar } from "@/components/shared/Navbar";
+import { CartDrawer } from "@/components/shared/CartDrawer";
+import { Footer } from "@/components/shared/Footer";
 
 const inter = Inter({ subsets: ['latin'] });
 

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { ProductCard } from '@/components/ui/shared/ProductCard';
-import { ShopFilters } from '@/components/ui/shared/ShopFilters';
+import { ProductCard } from "@/components/shared/ProductCard";
+import { ShopFilters } from "@/components/shared/ShopFilters";
 
 
 export const dynamic = 'force-dynamic';

@@ -9,7 +9,7 @@ export default async function AdminPage() {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') redirect('/login');
 
-  const [products, categories, orders, userCount] = await Promise.all([
+  const [products, categories, orders, slides, userCount] = await Promise.all([
     prisma.product.findMany({
       include: { category: true, variants: true },
       orderBy: { createdAt: 'desc' },
@@ -18,6 +18,9 @@ export default async function AdminPage() {
     prisma.order.findMany({
       include: { user: { select: { name: true, email: true, phone: true } } },
       orderBy: { createdAt: 'desc' },
+    }),
+    prisma.heroSlide.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     }),
     prisma.user.count(),
   ]);
@@ -44,7 +47,7 @@ export default async function AdminPage() {
           Store Management
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Manage inventory, categories, pricing, and customer orders.
+          Manage inventory, homepage slides, categories, and customer orders.
         </p>
       </div>
 
@@ -52,6 +55,7 @@ export default async function AdminPage() {
         initialProducts={serializedProducts}
         initialCategories={categories}
         initialOrders={serializedOrders}
+        initialSlides={slides}
         stats={{
           revenue,
           orderCount: orders.length,
