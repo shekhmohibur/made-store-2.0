@@ -51,13 +51,3 @@ export async function DELETE(req, { params }) {
   await prisma.heroSlide.delete({ where: { id } });
   return NextResponse.json({ deleted: true });
 }
-export async function DELETE(req, { params }) {
-  const session = await auth();
-  if (session?.user?.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  const { id } = await params;
-  await prisma.heroSlide.delete({ where: { id } });
-  return NextResponse.json({ deleted: true });
-}

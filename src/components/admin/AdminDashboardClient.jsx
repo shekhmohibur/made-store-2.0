@@ -6,21 +6,13 @@ import { Plus, Trash2, Package, ShoppingCart, Users, DollarSign, Pencil } from '
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Badge } from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
 
 const ORDER_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
-export function AdminDashboardClient({ initialProducts, initialCategories, initialOrders, stats, initialSlides = [], }) {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState('products');
-  const [productModalOpen, setProductModalOpen] = useState(false);
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [slideModalOpen, setSlideModalOpen] = useState(false);
-
-  const EMPTY_SLIDE_FORM = {
+const EMPTY_SLIDE_FORM = {
   badge: '',
   title: '',
   subtitle: '',
@@ -33,95 +25,35 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
   isActive: true,
 };
 
-const [editingSlideId, setEditingSlideId] = useState(null);
+export function AdminDashboardClient({
+  initialProducts,
+  initialCategories,
+  initialOrders,
+  stats,
+  initialSlides = [],
+}) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('products');
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [slideModalOpen, setSlideModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-const openEditSlideModal = (slide) => {
-  setEditingSlideId(slide.id);
-  setSlideForm({
-    badge: slide.badge || '',
-    title: slide.title || '',
-    subtitle: slide.subtitle || '',
-    image: slide.image || '',
-    ctaLabel: slide.ctaLabel || 'Shop Collection',
-    ctaLink: slide.ctaLink || '/shop',
-    secCtaLabel: slide.secCtaLabel || '',
-    secCtaLink: slide.secCtaLink || '',
-    sortOrder: slide.sortOrder ?? 0,
-    isActive: slide.isActive ?? true,
-  });
-  setSlideModalOpen(true);
-};
-const handleSaveSlide = async (e) => {
-  e.preventDefault();
-  setSaving(true);
+  // Unified Delete Modal State
+  const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'product' | 'slide', id: string, name: string }
+  const [deleting, setDeleting] = useState(false);
 
-  const url = editingSlideId
-    ? `/api/admin/slides/${editingSlideId}`
-    : '/api/admin/slides';
-  const method = editingSlideId ? 'PATCH' : 'POST';
+  // Slide Form State
+  const [editingSlideId, setEditingSlideId] = useState(null);
+  const [slideForm, setSlideForm] = useState(EMPTY_SLIDE_FORM);
 
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(slideForm),
-  });
-
-  if (res.ok) {
-    setSlideForm(EMPTY_SLIDE_FORM);
-    setEditingSlideId(null);
-    setSlideModalOpen(false);
-    router.refresh();
-  }
-  setSaving(false);
-};
-  const [slideForm, setSlideForm] = useState({
-    badge: '',
-    title: '',
-    subtitle: '',
-    image: '',
-    ctaLabel: 'Shop Collection',
-    ctaLink: '/shop',
-    secCtaLabel: '',
-    secCtaLink: '',
-    sortOrder: 0,
-  });
-
-  const handleCreateSlide = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await fetch('/api/admin/slides', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(slideForm),
-    });
-    if (res.ok) {
-      setSlideForm({
-        badge: '',
-        title: '',
-        subtitle: '',
-        image: '',
-        ctaLabel: 'Shop Collection',
-        ctaLink: '/shop',
-        secCtaLabel: '',
-        secCtaLink: '',
-        sortOrder: 0,
-      });
-      setSlideModalOpen(false);
-      router.refresh();
-    }
-    setSaving(false);
-  };
-
-  const handleDeleteSlide = async (id) => {
-    if (!confirm('Delete this homepage slide?')) return;
-    await fetch(`/api/admin/slides/${id}`, { method: 'DELETE' });
-    router.refresh();
-  };
   // Category Form State
   const [catName, setCatName] = useState('');
   const [catImage, setCatImage] = useState('');
+  const [catError, setCatError] = useState('');
 
   // Product Form State
+  const [productError, setProductError] = useState('');
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -133,6 +65,120 @@ const handleSaveSlide = async (e) => {
     variants: [{ size: 'M', color: 'Black', colorHex: '#18181b', stock: 10 }],
   });
 
+  const activeCategoryId = form.categoryId || initialCategories[0]?.id || '';
+
+  // ==========================================
+  // DELETE HANDLER (PRODUCTS & SLIDES)
+  // ==========================================
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+
+    const endpoint =
+      deleteTarget.type === 'product'
+        ? `/api/admin/products/${deleteTarget.id}`
+        : `/api/admin/slides/${deleteTarget.id}`;
+
+    const res = await fetch(endpoint, { method: 'DELETE' });
+
+    setDeleting(false);
+    setDeleteTarget(null);
+
+    if (res.ok) {
+      router.refresh();
+    }
+  };
+
+  // ==========================================
+  // SLIDE HANDLERS
+  // ==========================================
+  const openNewSlideModal = () => {
+    setEditingSlideId(null);
+    setSlideForm(EMPTY_SLIDE_FORM);
+    setSlideModalOpen(true);
+  };
+
+  const openEditSlideModal = (slide) => {
+    setEditingSlideId(slide.id);
+    setSlideForm({
+      badge: slide.badge || '',
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      image: slide.image || '',
+      ctaLabel: slide.ctaLabel || 'Shop Collection',
+      ctaLink: slide.ctaLink || '/shop',
+      secCtaLabel: slide.secCtaLabel || '',
+      secCtaLink: slide.secCtaLink || '',
+      sortOrder: slide.sortOrder ?? 0,
+      isActive: slide.isActive ?? true,
+    });
+    setSlideModalOpen(true);
+  };
+
+  const handleSaveSlide = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const url = editingSlideId
+      ? `/api/admin/slides/${editingSlideId}`
+      : '/api/admin/slides';
+    const method = editingSlideId ? 'PATCH' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(slideForm),
+    });
+
+    if (res.ok) {
+      setSlideForm(EMPTY_SLIDE_FORM);
+      setEditingSlideId(null);
+      setSlideModalOpen(false);
+      router.refresh();
+    }
+    setSaving(false);
+  };
+
+  // ==========================================
+  // CATEGORY HANDLER
+  // ==========================================
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setCatError('');
+
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: catName, image: catImage }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setCatError(data.error || 'Failed to create category.');
+        setSaving(false);
+        return;
+      }
+
+      if (data.category?.id && !form.categoryId) {
+        setForm((prev) => ({ ...prev, categoryId: data.category.id }));
+      }
+
+      setCatName('');
+      setCatImage('');
+      setCategoryModalOpen(false);
+      router.refresh();
+    } catch {
+      setCatError('Network error while creating category.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ==========================================
+  // PRODUCT & VARIANT HANDLERS
+  // ==========================================
   const addVariantRow = () => {
     setForm((prev) => ({
       ...prev,
@@ -149,48 +195,57 @@ const handleSaveSlide = async (e) => {
     setForm({ ...form, variants: updated });
   };
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await fetch('/api/admin/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: catName, image: catImage }),
-    });
-    if (res.ok) {
-      setCatName('');
-      setCatImage('');
-      setCategoryModalOpen(false);
-      router.refresh();
-    }
-    setSaving(false);
-  };
-
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch('/api/admin/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        images: form.imageUrl ? [form.imageUrl] : [],
-      }),
-    });
+    setProductError('');
 
-    if (res.ok) {
+    if (!activeCategoryId) {
+      setProductError('Please create and select a category first.');
+      setSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          categoryId: activeCategoryId,
+          images: form.imageUrl ? [form.imageUrl.trim()] : [],
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setProductError(data.error || 'Failed to create product.');
+        setSaving(false);
+        return;
+      }
+
+      setForm({
+        name: '',
+        description: '',
+        basePrice: '',
+        salePrice: '',
+        imageUrl: '',
+        categoryId: initialCategories[0]?.id || '',
+        featured: true,
+        variants: [{ size: 'M', color: 'Black', colorHex: '#18181b', stock: 10 }],
+      });
       setProductModalOpen(false);
       router.refresh();
+    } catch {
+      setProductError('Network error while creating product.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!confirm('Delete this product permanently?')) return;
-    await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
-    router.refresh();
-  };
-
+  // ==========================================
+  // ORDER STATUS HANDLER
+  // ==========================================
   const handleOrderStatus = async (orderId, status) => {
     await fetch(`/api/admin/orders/${orderId}`, {
       method: 'PATCH',
@@ -240,7 +295,6 @@ const handleSaveSlide = async (e) => {
       </div>
 
       {/* Action Bar & Tabs */}
-{/* Action Bar & Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 pb-4">
         <div className="flex gap-2">
           {['products', 'orders', 'slides'].map((tab) => (
@@ -259,7 +313,7 @@ const handleSaveSlide = async (e) => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSlideModalOpen(true)}>
+          <Button variant="outline" size="sm" onClick={openNewSlideModal}>
             <Plus className="h-4 w-4" />
             New Slide
           </Button>
@@ -316,8 +370,11 @@ const handleSaveSlide = async (e) => {
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <button
-                        onClick={() => handleDeleteProduct(p.id)}
+                        onClick={() =>
+                          setDeleteTarget({ type: 'product', id: p.id, name: p.name })
+                        }
                         className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                        title="Delete product"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -372,33 +429,7 @@ const handleSaveSlide = async (e) => {
         </div>
       )}
 
-      {/* Category Modal */}
-      <Modal
-        isOpen={categoryModalOpen}
-        onClose={() => setCategoryModalOpen(false)}
-        title="Create Clothing Category"
-      >
-        <form onSubmit={handleCreateCategory} className="space-y-4">
-          <Input
-            label="Category Name"
-            placeholder="e.g. Hoodies & Sweatshirts"
-            value={catName}
-            onChange={(e) => setCatName(e.target.value)}
-            required
-          />
-          <Input
-            label="Cover Image URL"
-            placeholder="https://..."
-            value={catImage}
-            onChange={(e) => setCatImage(e.target.value)}
-          />
-          <Button type="submit" isLoading={saving} className="w-full">
-            Save Category
-          </Button>
-        </form>
-      </Modal>
-
-{/* Slides Management Tab */}
+      {/* Slides Management Tab */}
       {activeTab === 'slides' && (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {initialSlides.length === 0 ? (
@@ -451,7 +482,13 @@ const handleSaveSlide = async (e) => {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteSlide(slide.id)}
+                        onClick={() =>
+                          setDeleteTarget({
+                            type: 'slide',
+                            id: slide.id,
+                            name: slide.title,
+                          })
+                        }
                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
                         title="Delete slide"
                       >
@@ -465,6 +502,40 @@ const handleSaveSlide = async (e) => {
           )}
         </div>
       )}
+
+      {/* Category Modal */}
+      <Modal
+        isOpen={categoryModalOpen}
+        onClose={() => {
+          setCategoryModalOpen(false);
+          setCatError('');
+        }}
+        title="Create Clothing Category"
+      >
+        <form onSubmit={handleCreateCategory} className="space-y-4">
+          {catError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {catError}
+            </div>
+          )}
+          <Input
+            label="Category Name"
+            placeholder="e.g. Hoodies & Sweatshirts"
+            value={catName}
+            onChange={(e) => setCatName(e.target.value)}
+            required
+          />
+          <Input
+            label="Cover Image URL"
+            placeholder="https://..."
+            value={catImage}
+            onChange={(e) => setCatImage(e.target.value)}
+          />
+          <Button type="submit" isLoading={saving} className="w-full">
+            Save Category
+          </Button>
+        </form>
+      </Modal>
 
       {/* Create / Edit Hero Slide Modal */}
       <Modal
@@ -569,101 +640,23 @@ const handleSaveSlide = async (e) => {
         </form>
       </Modal>
 
-      {/* Create Hero Slide Modal */}
-      <Modal
-        isOpen={slideModalOpen}
-        onClose={() => setSlideModalOpen(false)}
-        title="Add Homepage Carousel Slide"
-        maxWidth="max-w-xl"
-      >
-        <form onSubmit={handleCreateSlide} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Top Badge (Optional)"
-              placeholder="NEW DROP 2026"
-              value={slideForm.badge}
-              onChange={(e) => setSlideForm({ ...slideForm, badge: e.target.value })}
-            />
-            <Input
-              label="Sort Order"
-              type="number"
-              value={slideForm.sortOrder}
-              onChange={(e) => setSlideForm({ ...slideForm, sortOrder: e.target.value })}
-            />
-          </div>
-
-          <Input
-            label="Headline Title"
-            placeholder="Elevated Streetwear Essentials."
-            value={slideForm.title}
-            onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Subtitle (Optional)"
-            placeholder="Crafted from 420gsm combed cotton..."
-            value={slideForm.subtitle}
-            onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
-          />
-
-          <Input
-            label="Slide Image URL"
-            placeholder="https://images.unsplash.com/..."
-            value={slideForm.image}
-            onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
-            required
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Primary Button Text"
-              value={slideForm.ctaLabel}
-              onChange={(e) => setSlideForm({ ...slideForm, ctaLabel: e.target.value })}
-              required
-            />
-            <Input
-              label="Primary Button Link"
-              value={slideForm.ctaLink}
-              onChange={(e) => setSlideForm({ ...slideForm, ctaLink: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Secondary Button Text (Optional)"
-              placeholder="Explore Sale"
-              value={slideForm.secCtaLabel}
-              onChange={(e) =>
-                setSlideForm({ ...slideForm, secCtaLabel: e.target.value })
-              }
-            />
-            <Input
-              label="Secondary Button Link"
-              placeholder="/shop?sale=true"
-              value={slideForm.secCtaLink}
-              onChange={(e) =>
-                setSlideForm({ ...slideForm, secCtaLink: e.target.value })
-              }
-            />
-          </div>
-
-          <Button type="submit" isLoading={saving} className="w-full">
-            Publish Slide
-          </Button>
-        </form>
-      </Modal>
-
-      
       {/* Product Modal */}
       <Modal
         isOpen={productModalOpen}
-        onClose={() => setProductModalOpen(false)}
+        onClose={() => {
+          setProductModalOpen(false);
+          setProductError('');
+        }}
         title="Add New Clothing Product"
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateProduct} className="max-h-[75vh] space-y-4 overflow-y-auto pr-1">
+          {productError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+              {productError}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Product Name"
@@ -676,16 +669,20 @@ const handleSaveSlide = async (e) => {
                 Category
               </label>
               <select
-                value={form.categoryId}
+                value={activeCategoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                 className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm"
                 required
               >
-                {initialCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {initialCategories.length === 0 ? (
+                  <option value="">No categories yet — create one first</option>
+                ) : (
+                  initialCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -721,7 +718,6 @@ const handleSaveSlide = async (e) => {
               required
             />
           </div>
-          
 
           {/* Variants Matrix */}
           <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
@@ -773,6 +769,16 @@ const handleSaveSlide = async (e) => {
           </Button>
         </form>
       </Modal>
+
+      {/* Reusable Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleting}
+        title={deleteTarget?.type === 'product' ? 'Delete Product' : 'Delete Slide'}
+        message={`Are you sure you want to permanently delete "${deleteTarget?.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 }
