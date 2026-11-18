@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Package, ShoppingCart, Users, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Package, ShoppingCart, Users, DollarSign, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
@@ -19,6 +19,61 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
   const [saving, setSaving] = useState(false);
 
   const [slideModalOpen, setSlideModalOpen] = useState(false);
+
+  const EMPTY_SLIDE_FORM = {
+  badge: '',
+  title: '',
+  subtitle: '',
+  image: '',
+  ctaLabel: 'Shop Collection',
+  ctaLink: '/shop',
+  secCtaLabel: '',
+  secCtaLink: '',
+  sortOrder: 0,
+  isActive: true,
+};
+
+const [editingSlideId, setEditingSlideId] = useState(null);
+
+const openEditSlideModal = (slide) => {
+  setEditingSlideId(slide.id);
+  setSlideForm({
+    badge: slide.badge || '',
+    title: slide.title || '',
+    subtitle: slide.subtitle || '',
+    image: slide.image || '',
+    ctaLabel: slide.ctaLabel || 'Shop Collection',
+    ctaLink: slide.ctaLink || '/shop',
+    secCtaLabel: slide.secCtaLabel || '',
+    secCtaLink: slide.secCtaLink || '',
+    sortOrder: slide.sortOrder ?? 0,
+    isActive: slide.isActive ?? true,
+  });
+  setSlideModalOpen(true);
+};
+const handleSaveSlide = async (e) => {
+  e.preventDefault();
+  setSaving(true);
+
+  const url = editingSlideId
+    ? `/api/admin/slides/${editingSlideId}`
+    : '/api/admin/slides';
+  const method = editingSlideId ? 'PATCH' : 'POST';
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(slideForm),
+  });
+
+  if (res.ok) {
+    setSlideForm(EMPTY_SLIDE_FORM);
+    setEditingSlideId(null);
+    setSlideModalOpen(false);
+    router.refresh();
+  }
+  setSaving(false);
+};
   const [slideForm, setSlideForm] = useState({
     badge: '',
     title: '',
@@ -362,9 +417,14 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
                     alt={slide.title}
                     className="h-full w-full object-cover"
                   />
-                  <span className="absolute left-3 top-3 rounded-full bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-bold text-white">
-                    Order: {slide.sortOrder}
-                  </span>
+                  <div className="absolute left-3 top-3 flex items-center gap-1.5">
+                    <span className="rounded-full bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-bold text-white">
+                      Order: {slide.sortOrder}
+                    </span>
+                    <Badge variant={slide.isActive ? 'success' : 'warning'}>
+                      {slide.isActive ? 'Active' : 'Hidden'}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="p-4">
                   {slide.badge && (
@@ -382,13 +442,22 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
                     <span className="text-xs font-medium text-zinc-600">
                       {slide.ctaLabel} → {slide.ctaLink}
                     </span>
-                    <button
-                      onClick={() => handleDeleteSlide(slide.id)}
-                      className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
-                      title="Delete slide"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditSlideModal(slide)}
+                        className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                        title="Edit slide"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSlide(slide.id)}
+                        className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                        title="Delete slide"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -396,6 +465,109 @@ export function AdminDashboardClient({ initialProducts, initialCategories, initi
           )}
         </div>
       )}
+
+      {/* Create / Edit Hero Slide Modal */}
+      <Modal
+        isOpen={slideModalOpen}
+        onClose={() => {
+          setSlideModalOpen(false);
+          setEditingSlideId(null);
+        }}
+        title={editingSlideId ? 'Edit Homepage Slide' : 'Add Homepage Carousel Slide'}
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleSaveSlide} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Top Badge (Optional)"
+              placeholder="NEW DROP 2026"
+              value={slideForm.badge}
+              onChange={(e) => setSlideForm({ ...slideForm, badge: e.target.value })}
+            />
+            <Input
+              label="Sort Order"
+              type="number"
+              value={slideForm.sortOrder}
+              onChange={(e) => setSlideForm({ ...slideForm, sortOrder: e.target.value })}
+            />
+          </div>
+
+          <Input
+            label="Headline Title"
+            placeholder="Elevated Streetwear Essentials."
+            value={slideForm.title}
+            onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
+            required
+          />
+
+          <Input
+            label="Subtitle (Optional)"
+            placeholder="Crafted from 420gsm combed cotton..."
+            value={slideForm.subtitle}
+            onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
+          />
+
+          <Input
+            label="Slide Image URL"
+            placeholder="https://images.unsplash.com/..."
+            value={slideForm.image}
+            onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
+            required
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Primary Button Text"
+              value={slideForm.ctaLabel}
+              onChange={(e) => setSlideForm({ ...slideForm, ctaLabel: e.target.value })}
+              required
+            />
+            <Input
+              label="Primary Button Link"
+              value={slideForm.ctaLink}
+              onChange={(e) => setSlideForm({ ...slideForm, ctaLink: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Secondary Button Text (Optional)"
+              placeholder="Explore Sale"
+              value={slideForm.secCtaLabel}
+              onChange={(e) =>
+                setSlideForm({ ...slideForm, secCtaLabel: e.target.value })
+              }
+            />
+            <Input
+              label="Secondary Button Link"
+              placeholder="/shop?sale=true"
+              value={slideForm.secCtaLink}
+              onChange={(e) =>
+                setSlideForm({ ...slideForm, secCtaLink: e.target.value })
+              }
+            />
+          </div>
+
+          <label className="flex cursor-pointer items-center gap-2.5 pt-1">
+            <input
+              type="checkbox"
+              checked={slideForm.isActive}
+              onChange={(e) =>
+                setSlideForm({ ...slideForm, isActive: e.target.checked })
+              }
+              className="h-4 w-4 rounded border-zinc-300 accent-zinc-900"
+            />
+            <span className="text-sm font-medium text-zinc-800">
+              Active (visible on homepage)
+            </span>
+          </label>
+
+          <Button type="submit" isLoading={saving} className="w-full">
+            {editingSlideId ? 'Update Slide' : 'Publish Slide'}
+          </Button>
+        </form>
+      </Modal>
 
       {/* Create Hero Slide Modal */}
       <Modal
