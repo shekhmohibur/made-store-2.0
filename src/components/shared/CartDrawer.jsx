@@ -9,6 +9,32 @@ import { formatPrice } from '@/lib/utils';
 export function CartDrawer() {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, subtotal } = useCart();
 
+const handleDirectWhatsApp = async () => {
+    const res = await fetch('/api/admin/settings');
+    const { settings } = await res.json();
+    const phone = settings?.whatsappNumber || '8801700000000';
+    const currency = settings?.currencySymbol || '৳';
+
+    const itemLines = items
+      .map(
+        (item, idx) =>
+          `${idx + 1}. *${item.name}* (${item.color} / Size ${item.size}) x${item.quantity} = ${currency}${(
+            item.price * item.quantity
+          ).toFixed(2)}`
+      )
+      .join('\n');
+
+    const text = [
+      `Hello *${settings?.storeName || 'ATELIER.'}*, I want to place an order:`,
+      ``,
+      itemLines,
+      ``,
+      `*Subtotal: ${currency}${subtotal.toFixed(2)}*`,
+      `(Please confirm delivery charge & availability)`,
+    ].join('\n');
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+  };
   if (!isOpen) return null;
 
   return (

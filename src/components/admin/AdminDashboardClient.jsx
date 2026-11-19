@@ -519,6 +519,187 @@ export function AdminDashboardClient({
         </div>
       )}
 
+{/* Site & Payment Settings Tab */}
+      {activeTab === 'settings' && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setSaving(true);
+            await fetch('/api/admin/settings', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(siteSettings),
+            });
+            setSaving(false);
+            router.refresh();
+          }}
+          className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6"
+        >
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900">General Store Settings</h2>
+            <p className="text-xs text-zinc-500">
+              Control branding, currency symbol, and delivery charges across the entire store.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Input
+              label="Store Name"
+              value={siteSettings.storeName}
+              onChange={(e) => setSiteSettings({ ...siteSettings, storeName: e.target.value })}
+            />
+            <Input
+              label="Currency Symbol"
+              value={siteSettings.currencySymbol}
+              onChange={(e) => setSiteSettings({ ...siteSettings, currencySymbol: e.target.value })}
+            />
+            <Input
+              label="Inside Dhaka Delivery"
+              type="number"
+              value={siteSettings.deliveryChargeInside}
+              onChange={(e) =>
+                setSiteSettings({ ...siteSettings, deliveryChargeInside: e.target.value })
+              }
+            />
+            <Input
+              label="Outside Dhaka Delivery"
+              type="number"
+              value={siteSettings.deliveryChargeOutside}
+              onChange={(e) =>
+                setSiteSettings({ ...siteSettings, deliveryChargeOutside: e.target.value })
+              }
+            />
+          </div>
+
+          {/* WhatsApp Ordering Control */}
+          <div className="space-y-3 border-t border-zinc-100 pt-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900">WhatsApp Order System</h3>
+                <p className="text-xs text-zinc-500">
+                  Customers can send itemized cart & total directly to this WhatsApp number.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={siteSettings.whatsappEnabled}
+                onChange={(e) =>
+                  setSiteSettings({ ...siteSettings, whatsappEnabled: e.target.checked })
+                }
+                className="h-4 w-4 accent-zinc-900"
+              />
+            </div>
+            <Input
+              label="WhatsApp Number (With Country Code, e.g. 88017XXXXXXXX)"
+              value={siteSettings.whatsappNumber}
+              onChange={(e) =>
+                setSiteSettings({ ...siteSettings, whatsappNumber: e.target.value })
+              }
+            />
+          </div>
+
+          {/* Local Payment Gateways */}
+          <div className="space-y-4 border-t border-zinc-100 pt-5">
+            <h3 className="text-sm font-bold text-zinc-900">
+              On-Site Payment Methods (COD, bKash, Nagad, Rocket, SSLCommerz)
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex items-center justify-between rounded-xl border border-zinc-200 p-3.5">
+                <span className="text-sm font-semibold">Cash on Delivery (COD)</span>
+                <input
+                  type="checkbox"
+                  checked={siteSettings.codEnabled}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, codEnabled: e.target.checked })
+                  }
+                  className="h-4 w-4 accent-zinc-900"
+                />
+              </label>
+
+              <label className="flex items-center justify-between rounded-xl border border-zinc-200 p-3.5">
+                <span className="text-sm font-semibold">SSLCommerz Online Gateway</span>
+                <input
+                  type="checkbox"
+                  checked={siteSettings.sslcommerzEnabled}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, sslcommerzEnabled: e.target.checked })
+                  }
+                  className="h-4 w-4 accent-zinc-900"
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
+                <label className="flex items-center justify-between text-sm font-bold text-pink-600">
+                  <span>bKash</span>
+                  <input
+                    type="checkbox"
+                    checked={siteSettings.bkashEnabled}
+                    onChange={(e) =>
+                      setSiteSettings({ ...siteSettings, bkashEnabled: e.target.checked })
+                    }
+                  />
+                </label>
+                <Input
+                  placeholder="bKash Merchant/Personal Number"
+                  value={siteSettings.bkashNumber || ''}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, bkashNumber: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
+                <label className="flex items-center justify-between text-sm font-bold text-orange-600">
+                  <span>Nagad</span>
+                  <input
+                    type="checkbox"
+                    checked={siteSettings.nagadEnabled}
+                    onChange={(e) =>
+                      setSiteSettings({ ...siteSettings, nagadEnabled: e.target.checked })
+                    }
+                  />
+                </label>
+                <Input
+                  placeholder="Nagad Merchant/Personal Number"
+                  value={siteSettings.nagadNumber || ''}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, nagadNumber: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
+                <label className="flex items-center justify-between text-sm font-bold text-purple-700">
+                  <span>Rocket</span>
+                  <input
+                    type="checkbox"
+                    checked={siteSettings.rocketEnabled}
+                    onChange={(e) =>
+                      setSiteSettings({ ...siteSettings, rocketEnabled: e.target.checked })
+                    }
+                  />
+                </label>
+                <Input
+                  placeholder="Rocket Account Number"
+                  value={siteSettings.rocketNumber || ''}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, rocketNumber: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" isLoading={saving}>
+              Save Site & Payment Settings
+            </Button>
+          </div>
+        </form>
+      )}
       {/* Category Modal (File Upload) */}
       <Modal
         isOpen={categoryModalOpen}

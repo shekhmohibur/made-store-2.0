@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getStoreSettings } from '@/lib/settings';
 
 export async function POST(req) {
   const session = await auth();
@@ -9,14 +10,36 @@ export async function POST(req) {
   }
 
   try {
-    const { items, shipping, paymentMethod = 'COD' } = await req.json();
+    const {
+      items,
+      shipping,
+      paymentMethod = 'COD',
+      deliveryZone = 'inside',
+      senderPhone = '',
+      paymentTrxId = '',
+    } = await req.json();
 
     if (!items?.length) {
       return NextResponse.json({ error: 'Your cart is empty.' }, { status: 400 });
     }
 
-    const order = await prisma.\$transaction(async (tx) => {
-      let totalAmount = 0;
+    if (['BKASH', 'NAGAD', 'ROCKET'].includes(paymentMethod)) {
+      if (!senderPhone?.trim() || !paymentTrxId?.trim()) {
+        return NextResponse.json(
+          { error: `Please enter your ${paymentMethod} sender number and Transaction ID.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const settings = await getStoreSettings();
+    const deliveryFee =
+      deliveryZone === 'outside'
+        ? settings.deliveryChargeOutside
+        : settings.deliveryChargeInside;
+
+    const order = await prisma.$transaction(async (tx) => {
+      let subtotal = 0;
       const verifiedItems = [];
 
       for (const item of items) {
@@ -30,12 +53,15 @@ export async function POST(req) {
         }
 
         const unitPrice = Number(variant.product.salePrice || variant.product.basePrice);
-        totalAmount += unitPrice * item.quantity;
+        subtotal += unitPrice * item.quantity;
 
         verifiedItems.push({
           variantId: variant.id,
           quantity: item.quantity,
           price: unitPrice,
+          name: variant.product.name,
+          size: variant.size,
+          color: variant.color,
         });
 
         await tx.productVariant.update({
@@ -44,6 +70,8 @@ export async function POST(req) {
         });
       }
 
+      const totalAmount = subtotal + deliveryFee;
+
       const address = await tx.address.create({
         data: {
           userId: session.user.id,
@@ -51,26 +79,75 @@ export async function POST(req) {
           phone: shipping.phone,
           street: shipping.street,
           city: shipping.city,
-          postalCode: shipping.postalCode,
+          postalCode: shipping.postalCode || '',
           country: shipping.country || 'Bangladesh',
         },
       });
 
       const orderNumber = `ATL-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-      return tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           orderNumber,
           userId: session.user.id,
           addressId: address.id,
           totalAmount,
           paymentMethod,
-          items: { create: verifiedItems },
+          senderPhone: senderPhone?.trim() || null,
+          paymentTrxId: paymentTrxId?.trim() || null,
+          items: {
+            create: verifiedItems.map(({ variantId, quantity, price }) => ({
+              variantId,
+              quantity,
+              price,
+            })),
+          },
         },
       });
+
+      return { createdOrder, verifiedItems, subtotal, deliveryFee, totalAmount };
     });
 
-    return NextResponse.json({ order }, { status: 201 });
+    // Build formatted WhatsApp message URL if WhatsApp order was chosen
+    let whatsappUrl = null;
+    if (paymentMethod === 'WHATSAPP' && settings.whatsappNumber) {
+      const currency = settings.currencySymbol || '৳';
+      const itemLines = order.verifiedItems
+        .map(
+          (i, idx) =>
+            `${idx + 1}. *${i.name}* (${i.color} / ${i.size}) x${i.quantity} = ${currency}${(
+              i.price * i.quantity
+            ).toFixed(2)}`
+        )
+        .join('\n');
+
+      const message = [
+        `*New Order — ${settings.storeName}*`,
+        `Order ID: *${order.createdOrder.orderNumber}*`,
+        ``,
+        `*Items:*`,
+        itemLines,
+        ``,
+        `Subtotal: ${currency}${order.subtotal.toFixed(2)}`,
+        `Delivery (${deliveryZone === 'outside' ? 'Outside Dhaka' : 'Inside Dhaka'}): ${currency}${order.deliveryFee.toFixed(2)}`,
+        `*Grand Total: ${currency}${order.totalAmount.toFixed(2)}*`,
+        ``,
+        `*Customer Details:*`,
+        `Name: ${shipping.fullName}`,
+        `Phone: ${shipping.phone}`,
+        `Address: ${shipping.street}, ${shipping.city}`,
+      ].join('\n');
+
+      whatsappUrl = `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    }
+
+    return NextResponse.json(
+      {
+        order: order.createdOrder,
+        whatsappUrl,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error.message || 'Failed to place order.' },

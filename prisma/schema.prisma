@@ -156,7 +156,9 @@ model Order {
   address       Address     @relation(fields: [addressId], references: [id])
   status        OrderStatus @default(PENDING)
   totalAmount   Decimal     @db.Decimal(10, 2)
-  paymentMethod String      @default("COD") // e.g., COD, STRIPE, SSLCOMMERZ
+  paymentMethod String      @default("COD") // COD, BKASH, NAGAD, ROCKET, SSLCOMMERZ, WHATSAPP
+  senderPhone   String?     // Customer's bKash/Nagad/Rocket number
+  paymentTrxId  String?     // Transaction ID for manual mobile banking verification
   isPaid        Boolean     @default(false)
   items         OrderItem[]
   createdAt     DateTime    @default(now())
@@ -208,4 +210,29 @@ model HeroSlide {
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+}
+
+model StoreSettings {
+  id                  String   @id @default("default")
+  storeName           String   @default("ATELIER.")
+  tagline             String?  @default("Contemporary everyday essentials crafted with precision fabrics.")
+  currencySymbol      String   @default("৳")
+  deliveryChargeInside Int     @default(60)
+  deliveryChargeOutside Int    @default(120)
+
+  // WhatsApp Order Settings
+  whatsappEnabled     Boolean  @default(true)
+  whatsappNumber      String   @default("8801700000000") // Country code + number, no '+'
+
+  // On-Site Payment Toggles & Merchant Numbers
+  codEnabled          Boolean  @default(true)
+  bkashEnabled        Boolean  @default(true)
+  bkashNumber         String?  @default("01700000000")
+  nagadEnabled        Boolean  @default(true)
+  nagadNumber         String?  @default("01800000000")
+  rocketEnabled       Boolean  @default(true)
+  rocketNumber        String?  @default("01900000000")
+  sslcommerzEnabled   Boolean  @default(false)
+
+  updatedAt           DateTime @updatedAt
 }
