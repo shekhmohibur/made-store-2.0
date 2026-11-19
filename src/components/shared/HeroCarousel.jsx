@@ -64,18 +64,33 @@ export function HeroCarousel({ slides = [], interval = 5000 }) {
       onTouchEnd={handleTouchEnd}
       className="group relative overflow-hidden bg-zinc-950 text-white"
     >
-      {/* Sliding Track */}
+{/* Sliding Track */}
       <div
         className="flex transition-transform duration-700 ease-out"
         style={{ transform: `translateX(-${current * 100}%)` }}
       >
         {items.map((slide) => (
-          <div key={slide.id} className="w-full shrink-0">
-            <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
-              {/* Text Content */}
-              <div className="space-y-6">
+          <div
+            key={slide.id}
+            className="relative min-h-[520px] w-full shrink-0 lg:min-h-[600px]"
+          >
+            {/* Right-Side Edge-to-Edge Editorial Image */}
+            <div className="absolute inset-y-0 right-0 w-full lg:w-[58%]">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-103"
+              />
+              {/* Smooth gradient blend into the dark left side */}
+              <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/75 to-transparent lg:via-zinc-950/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-zinc-950/30 lg:hidden" />
+            </div>
+
+            {/* Foreground Text Container */}
+            <div className="relative z-10 mx-auto flex min-h-[520px] max-w-7xl items-center px-4 py-16 sm:px-6 lg:min-h-[600px] lg:px-8">
+              <div className="max-w-xl space-y-6">
                 {slide.badge && (
-                  <span className="inline-block rounded-full border border-zinc-700 bg-zinc-900 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-zinc-300">
+                  <span className="inline-block rounded-full border border-zinc-700 bg-zinc-900/90 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-zinc-300 backdrop-blur-xs">
                     {slide.badge}
                   </span>
                 )}
@@ -85,7 +100,7 @@ export function HeroCarousel({ slides = [], interval = 5000 }) {
                 </h1>
 
                 {slide.subtitle && (
-                  <p className="max-w-lg text-base text-zinc-400 sm:text-lg">
+                  <p className="max-w-md text-base text-zinc-300 sm:text-lg">
                     {slide.subtitle}
                   </p>
                 )}
@@ -106,22 +121,13 @@ export function HeroCarousel({ slides = [], interval = 5000 }) {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="border-zinc-700 bg-transparent text-white hover:bg-zinc-900"
+                        className="border-zinc-600 bg-zinc-950/50 text-white backdrop-blur-xs hover:bg-zinc-900"
                       >
                         {slide.secCtaLabel}
                       </Button>
                     </Link>
                   )}
                 </div>
-              </div>
-
-              {/* Slide Visual */}
-              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-zinc-900">
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="h-full w-full object-cover opacity-95 transition-transform duration-700 group-hover:scale-103"
-                />
               </div>
             </div>
           </div>

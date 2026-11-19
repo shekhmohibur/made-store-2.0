@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Badge } from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
 
@@ -40,12 +41,13 @@ export function AdminDashboardClient({
   const [saving, setSaving] = useState(false);
 
   // Unified Delete Modal State
-  const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'product' | 'slide', id: string, name: string }
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   // Slide Form State
   const [editingSlideId, setEditingSlideId] = useState(null);
   const [slideForm, setSlideForm] = useState(EMPTY_SLIDE_FORM);
+  const [slideError, setSlideError] = useState('');
 
   // Category Form State
   const [catName, setCatName] = useState('');
@@ -59,7 +61,7 @@ export function AdminDashboardClient({
     description: '',
     basePrice: '',
     salePrice: '',
-    imageUrl: '',
+    images: [],
     categoryId: initialCategories[0]?.id || '',
     featured: true,
     variants: [{ size: 'M', color: 'Black', colorHex: '#18181b', stock: 10 }],
@@ -94,12 +96,14 @@ export function AdminDashboardClient({
   // ==========================================
   const openNewSlideModal = () => {
     setEditingSlideId(null);
+    setSlideError('');
     setSlideForm(EMPTY_SLIDE_FORM);
     setSlideModalOpen(true);
   };
 
   const openEditSlideModal = (slide) => {
     setEditingSlideId(slide.id);
+    setSlideError('');
     setSlideForm({
       badge: slide.badge || '',
       title: slide.title || '',
@@ -117,8 +121,14 @@ export function AdminDashboardClient({
 
   const handleSaveSlide = async (e) => {
     e.preventDefault();
-    setSaving(true);
+    setSlideError('');
 
+    if (!slideForm.image) {
+      setSlideError('Please upload a slide image.');
+      return;
+    }
+
+    setSaving(true);
     const url = editingSlideId
       ? `/api/admin/slides/${editingSlideId}`
       : '/api/admin/slides';
@@ -130,11 +140,14 @@ export function AdminDashboardClient({
       body: JSON.stringify(slideForm),
     });
 
+    const data = await res.json();
     if (res.ok) {
       setSlideForm(EMPTY_SLIDE_FORM);
       setEditingSlideId(null);
       setSlideModalOpen(false);
       router.refresh();
+    } else {
+      setSlideError(data.error || 'Failed to save slide.');
     }
     setSaving(false);
   };
@@ -197,15 +210,19 @@ export function AdminDashboardClient({
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setProductError('');
 
     if (!activeCategoryId) {
       setProductError('Please create and select a category first.');
-      setSaving(false);
       return;
     }
 
+    if (form.images.length === 0) {
+      setProductError('Please upload at least one product image.');
+      return;
+    }
+
+    setSaving(true);
     try {
       const res = await fetch('/api/admin/products', {
         method: 'POST',
@@ -213,7 +230,6 @@ export function AdminDashboardClient({
         body: JSON.stringify({
           ...form,
           categoryId: activeCategoryId,
-          images: form.imageUrl ? [form.imageUrl.trim()] : [],
         }),
       });
 
@@ -229,7 +245,7 @@ export function AdminDashboardClient({
         description: '',
         basePrice: '',
         salePrice: '',
-        imageUrl: '',
+        images: [],
         categoryId: initialCategories[0]?.id || '',
         featured: true,
         variants: [{ size: 'M', color: 'Black', colorHex: '#18181b', stock: 10 }],
@@ -503,7 +519,7 @@ export function AdminDashboardClient({
         </div>
       )}
 
-      {/* Category Modal */}
+      {/* Category Modal (File Upload) */}
       <Modal
         isOpen={categoryModalOpen}
         onClose={() => {
@@ -525,11 +541,10 @@ export function AdminDashboardClient({
             onChange={(e) => setCatName(e.target.value)}
             required
           />
-          <Input
-            label="Cover Image URL"
-            placeholder="https://..."
+          <ImageUpload
+            label="Category Cover Image"
             value={catImage}
-            onChange={(e) => setCatImage(e.target.value)}
+            onChange={(url) => setCatImage(url)}
           />
           <Button type="submit" isLoading={saving} className="w-full">
             Save Category
@@ -537,17 +552,24 @@ export function AdminDashboardClient({
         </form>
       </Modal>
 
-      {/* Create / Edit Hero Slide Modal */}
+      {/* Create / Edit Hero Slide Modal (File Upload) */}
       <Modal
         isOpen={slideModalOpen}
         onClose={() => {
           setSlideModalOpen(false);
           setEditingSlideId(null);
+          setSlideError('');
         }}
         title={editingSlideId ? 'Edit Homepage Slide' : 'Add Homepage Carousel Slide'}
         maxWidth="max-w-xl"
       >
-        <form onSubmit={handleSaveSlide} className="space-y-4">
+        <form onSubmit={handleSaveSlide} className="max-h-[80vh] space-y-4 overflow-y-auto pr-1">
+          {slideError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {slideError}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Top Badge (Optional)"
@@ -578,11 +600,10 @@ export function AdminDashboardClient({
             onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
           />
 
-          <Input
-            label="Slide Image URL"
-            placeholder="https://images.unsplash.com/..."
+          <ImageUpload
+            label="Slide Banner Image"
             value={slideForm.image}
-            onChange={(e) => setSlideForm({ ...slideForm, image: e.target.value })}
+            onChange={(url) => setSlideForm({ ...slideForm, image: url })}
             required
           />
 
@@ -640,7 +661,7 @@ export function AdminDashboardClient({
         </form>
       </Modal>
 
-      {/* Product Modal */}
+      {/* Product Modal (Multi-File Upload) */}
       <Modal
         isOpen={productModalOpen}
         onClose={() => {
@@ -650,7 +671,7 @@ export function AdminDashboardClient({
         title="Add New Clothing Product"
         maxWidth="max-w-2xl"
       >
-        <form onSubmit={handleCreateProduct} className="max-h-[75vh] space-y-4 overflow-y-auto pr-1">
+        <form onSubmit={handleCreateProduct} className="max-h-[78vh] space-y-4 overflow-y-auto pr-1">
           {productError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
               {productError}
@@ -694,7 +715,7 @@ export function AdminDashboardClient({
             required
           />
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Base Price ($)"
               type="number"
@@ -710,14 +731,16 @@ export function AdminDashboardClient({
               value={form.salePrice}
               onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
             />
-            <Input
-              label="Image URL"
-              placeholder="https://..."
-              value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              required
-            />
           </div>
+
+          {/* Multi-Image Uploader for Product Gallery */}
+          <ImageUpload
+            label="Product Photos (First photo is the main cover)"
+            value={form.images}
+            onChange={(urls) => setForm({ ...form, images: urls })}
+            multiple
+            required
+          />
 
           {/* Variants Matrix */}
           <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
