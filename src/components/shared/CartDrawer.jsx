@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/Button';
-import { formatPrice } from '@/lib/utils';
+import { useSettings } from '@/context/SettingsContext';
 
 export function CartDrawer() {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, subtotal } = useCart();
+  const { formatMoney } = useSettings();
 
 const handleDirectWhatsApp = async () => {
     const res = await fetch('/api/admin/settings');
@@ -131,7 +132,7 @@ const handleDirectWhatsApp = async () => {
                       </div>
 
                       <span className="text-sm font-bold text-zinc-900">
-                        {formatPrice(item.price * item.quantity)}
+                        {formatMoney(item.price * item.quantity)}
                       </span>
                     </div>
                   </div>
@@ -147,7 +148,7 @@ const handleDirectWhatsApp = async () => {
             <div className="mb-4 flex items-center justify-between">
               <span className="text-sm text-zinc-600">Subtotal</span>
               <span className="text-lg font-bold text-zinc-900">
-                {formatPrice(subtotal)}
+                {formatMoney(subtotal)}
               </span>
             </div>
             <Link href="/checkout" onClick={() => setIsOpen(false)}>

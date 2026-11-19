@@ -14,6 +14,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useSettings } from '@/context/SettingsContext';
 
 const navLinks = [
   { label: 'New Arrivals', href: '/shop?sort=newest' },
@@ -26,9 +27,11 @@ export function Navbar() {
   const { data: session } = useSession();
   const { totalItems, setIsOpen } = useCart();
   const router = useRouter();
-
+  const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const storeName = settings?.storeName || 'ATELIER.';
+  const logoUrl = settings?.logoUrl;
 
   // Close mobile menu on Escape or desktop resize
   useEffect(() => {
@@ -68,13 +71,20 @@ export function Navbar() {
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-
+            {/* Brand Logo + Name */}
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-xl font-black tracking-tighter text-zinc-900"
+              className="flex items-center gap-2.5 text-xl font-black tracking-tighter text-zinc-900"
             >
-              ATELIER<span className="text-zinc-400">.</span>
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt={storeName}
+                  className="h-8 w-auto max-w-[130px] object-contain"
+                />
+              )}
+              <span>{storeName}</span>
             </Link>
           </div>
 

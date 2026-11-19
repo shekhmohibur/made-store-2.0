@@ -21,6 +21,7 @@ export async function PATCH(req) {
       where: { id: 'default' },
       update: {
         storeName: body.storeName?.trim() || 'ATELIER.',
+        logoUrl: body.logoUrl?.trim() || null,
         tagline: body.tagline?.trim() || '',
         currencySymbol: body.currencySymbol?.trim() || '৳',
         deliveryChargeInside: parseInt(body.deliveryChargeInside, 10) || 0,

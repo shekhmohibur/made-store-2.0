@@ -4,13 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
+import { useSettings } from '@/context/SettingsContext';
 
 export function ProductCard({ product }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
-
+  const { formatMoney } = useSettings();
   // Extract unique colors with their hex codes from product variants
   const uniqueColors = Array.from(
     new Map(
@@ -81,15 +81,15 @@ export function ProductCard({ product }) {
             {hasDiscount ? (
               <>
                 <span className="font-bold text-red-600">
-                  {formatPrice(product.salePrice)}
+                  {formatMoney(product.salePrice)}
                 </span>
                 <span className="text-xs text-zinc-400 line-through">
-                  {formatPrice(product.basePrice)}
+                  {formatMoney(product.basePrice)}
                 </span>
               </>
             ) : (
               <span className="font-semibold text-zinc-900">
-                {formatPrice(product.basePrice)}
+                {formatMoney(product.basePrice)}
               </span>
             )}
           </div>

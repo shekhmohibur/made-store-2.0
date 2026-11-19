@@ -4,14 +4,14 @@ import { useState, useMemo } from 'react';
 import { ShoppingBag, Check, Shield, Truck, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
+import { useSettings } from '@/context/SettingsContext';
 
 export function ProductDetailClient({ product }) {
   const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [added, setAdded] = useState(false);
-
+  const { formatMoney } = useSettings();
   const colors = useMemo(() => {
     return Array.from(
       new Map(
@@ -103,15 +103,15 @@ export function ProductDetailClient({ product }) {
             {hasDiscount ? (
               <>
                 <span className="text-2xl font-bold text-red-600">
-                  {formatPrice(product.salePrice)}
+                  {formatMoney(product.salePrice)}
                 </span>
                 <span className="text-base text-zinc-400 line-through">
-                  {formatPrice(product.basePrice)}
+                  {formatMoney(product.basePrice)}
                 </span>
               </>
             ) : (
               <span className="text-2xl font-bold text-zinc-900">
-                {formatPrice(product.basePrice)}
+                {formatMoney(product.basePrice)}
               </span>
             )}
           </div>
@@ -206,7 +206,7 @@ export function ProductDetailClient({ product }) {
             ) : (
               <>
                 <ShoppingBag className="h-5 w-5" />
-                Add to Bag — {formatPrice(product.salePrice || product.basePrice)}
+                Add to Bag — {formatMoney(product.salePrice || product.basePrice)}
               </>
             )}
           </Button>

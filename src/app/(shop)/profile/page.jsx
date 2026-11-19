@@ -3,13 +3,17 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Badge } from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
-import { AccountLinkCard } from '@/components/ui/auth/AccountLinkCard';
+import { AccountLinkClient } from '@/components/shared/AccountLinkClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage({ searchParams }) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: { accounts: { select: { provider: true } } },
+  });
 
   const resolvedParams = await searchParams;
 
@@ -41,7 +45,16 @@ export default async function ProfilePage({ searchParams }) {
       )}
 
       {/* Google + Email + Phone Link Manager */}
-      <AccountLinkCard />
+      <AccountLinkClient
+    user={{
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      hasPassword: Boolean(user.password),
+      googleLinked: user.accounts.some((a) => a.provider === 'google'),
+    }}
+  />
 
       {/* Order History */}
       <section className="space-y-4">

@@ -215,6 +215,7 @@ model HeroSlide {
 model StoreSettings {
   id                  String   @id @default("default")
   storeName           String   @default("ATELIER.")
+  logoUrl               String?  // Uploaded site logo image
   tagline             String?  @default("Contemporary everyday essentials crafted with precision fabrics.")
   currencySymbol      String   @default("৳")
   deliveryChargeInside Int     @default(60)

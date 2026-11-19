@@ -2,14 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Package, ShoppingCart, Users, DollarSign, Pencil } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  DollarSign, 
+  Pencil, 
+  Check, 
+  ShieldCheck,
+  UserCheck,
+  ArrowUpRight,
+  ArrowDownLeft, 
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Badge } from '@/components/ui/Badge';
-import { formatPrice } from '@/lib/utils';
+import { useSettings } from '@/context/SettingsContext';
 
 const ORDER_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
@@ -32,17 +45,97 @@ export function AdminDashboardClient({
   initialOrders,
   stats,
   initialSlides = [],
+  initialSettings,
+  initialUsers = [],
+  currentUserId,
 }) {
   const router = useRouter();
+  const { currency, formatMoney } = useSettings();
+
   const [activeTab, setActiveTab] = useState('products');
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [slideModalOpen, setSlideModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  
   // Unified Delete Modal State
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Orders Optimistic State
+  const [orders, setOrders] = useState(initialOrders);
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
+  const [orderError, setOrderError] = useState('');
+
+// Users State (Strictly Separated: Admins/Authors vs Customers)
+  const [users, setUsers] = useState(initialUsers);
+  const [userSearch, setUserSearch] = useState('');
+  const [userError, setUserError] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState(null);
+
+  const filteredUsers = users.filter((u) => {
+    if (!userSearch.trim()) return true;
+    const q = userSearch.toLowerCase();
+    return (
+      u.name?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      u.phone?.toLowerCase().includes(q)
+    );
+  });
+
+  const handleRoleChange = async (userId, nextRole) => {
+    setUserError('');
+    setUpdatingUserId(userId);
+
+    const previousUsers = [...users];
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, role: nextRole } : u))
+    );
+
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: nextRole }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setUsers(previousUsers);
+        setUserError(data.error || 'Failed to change user role.');
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setUsers(previousUsers);
+      setUserError('Network error while updating role.');
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const adminsAndAuthors = filteredUsers.filter((u) => u.role === 'ADMIN');
+  const customers = filteredUsers.filter((u) => u.role === 'CUSTOMER');
+  // Site & Payment Settings State
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [siteSettings, setSiteSettings] = useState({
+    storeName: initialSettings?.storeName || 'ATELIER.',
+    logoUrl: initialSettings?.logoUrl || '',
+    tagline: initialSettings?.tagline || '',
+    currencySymbol: initialSettings?.currencySymbol || '৳',
+    deliveryChargeInside: initialSettings?.deliveryChargeInside ?? 60,
+    deliveryChargeOutside: initialSettings?.deliveryChargeOutside ?? 120,
+    whatsappEnabled: initialSettings?.whatsappEnabled ?? true,
+    whatsappNumber: initialSettings?.whatsappNumber || '8801700000000',
+    codEnabled: initialSettings?.codEnabled ?? true,
+    bkashEnabled: initialSettings?.bkashEnabled ?? true,
+    bkashNumber: initialSettings?.bkashNumber || '',
+    nagadEnabled: initialSettings?.nagadEnabled ?? true,
+    nagadNumber: initialSettings?.nagadNumber || '',
+    rocketEnabled: initialSettings?.rocketEnabled ?? true,
+    rocketNumber: initialSettings?.rocketNumber || '',
+    sslcommerzEnabled: initialSettings?.sslcommerzEnabled ?? false,
+  });
 
   // Slide Form State
   const [editingSlideId, setEditingSlideId] = useState(null);
@@ -75,19 +168,28 @@ export function AdminDashboardClient({
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
+    setUserError('');
 
     const endpoint =
       deleteTarget.type === 'product'
         ? `/api/admin/products/${deleteTarget.id}`
-        : `/api/admin/slides/${deleteTarget.id}`;
+        : deleteTarget.type === 'slide'
+        ? `/api/admin/slides/${deleteTarget.id}`
+        : `/api/admin/users/${deleteTarget.id}`;
 
     const res = await fetch(endpoint, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
 
     setDeleting(false);
     setDeleteTarget(null);
 
     if (res.ok) {
+      if (deleteTarget.type === 'user') {
+        setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      }
       router.refresh();
+    } else if (deleteTarget.type === 'user') {
+      setUserError(data.error || 'Failed to delete user.');
     }
   };
 
@@ -262,13 +364,57 @@ export function AdminDashboardClient({
   // ==========================================
   // ORDER STATUS HANDLER
   // ==========================================
-  const handleOrderStatus = async (orderId, status) => {
-    await fetch(`/api/admin/orders/${orderId}`, {
+  const handleOrderStatus = async (orderId, newStatus) => {
+    setOrderError('');
+    setUpdatingOrderId(orderId);
+
+    const previousOrders = [...orders];
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setOrders(previousOrders);
+        setOrderError(data.error || 'Failed to update order status.');
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setOrders(previousOrders);
+      setOrderError('Network error while updating order.');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  // ==========================================
+  // SITE & PAYMENT SETTINGS HANDLER
+  // ==========================================
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setSettingsSaved(false);
+
+    const res = await fetch('/api/admin/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(siteSettings),
     });
-    router.refresh();
+
+    setSaving(false);
+    if (res.ok) {
+      setSettingsSaved(true);
+      router.refresh();
+      setTimeout(() => setSettingsSaved(false), 3000);
+    }
   };
 
   return (
@@ -281,7 +427,7 @@ export function AdminDashboardClient({
             <DollarSign className="h-4 w-4" />
           </div>
           <p className="mt-2 text-2xl font-black text-zinc-900">
-            {formatPrice(stats.revenue)}
+            {formatMoney(stats.revenue)}
           </p>
         </div>
 
@@ -309,11 +455,11 @@ export function AdminDashboardClient({
           <p className="mt-2 text-2xl font-black text-zinc-900">{stats.userCount}</p>
         </div>
       </div>
-
+      
       {/* Action Bar & Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 pb-4">
-        <div className="flex gap-2">
-          {['products', 'orders', 'slides'].map((tab) => (
+        <div className="flex flex-wrap gap-2">
+          {['products', 'orders', 'users', 'slides', 'settings'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -377,7 +523,7 @@ export function AdminDashboardClient({
                     </td>
                     <td className="px-5 py-3.5 text-zinc-600">{p.category?.name}</td>
                     <td className="px-5 py-3.5 font-medium">
-                      {formatPrice(p.salePrice || p.basePrice)}
+                      {formatMoney(p.salePrice || p.basePrice)}
                     </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={totalStock > 0 ? 'success' : 'danger'}>
@@ -405,43 +551,238 @@ export function AdminDashboardClient({
 
       {/* Orders Management Table */}
       {activeTab === 'orders' && (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-500">
-              <tr>
-                <th className="px-5 py-3.5">Order #</th>
-                <th className="px-5 py-3.5">Customer</th>
-                <th className="px-5 py-3.5">Total</th>
-                <th className="px-5 py-3.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {initialOrders.map((o) => (
-                <tr key={o.id}>
-                  <td className="px-5 py-3.5 font-bold text-zinc-900">{o.orderNumber}</td>
-                  <td className="px-5 py-3.5 text-zinc-600">
-                    {o.user?.name} ({o.user?.email || o.user?.phone})
-                  </td>
-                  <td className="px-5 py-3.5 font-semibold">
-                    {formatPrice(o.totalAmount)}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <select
-                      value={o.status}
-                      onChange={(e) => handleOrderStatus(o.id, e.target.value)}
-                      className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold"
-                    >
-                      {ORDER_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+        <div className="space-y-3">
+          {orderError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+              {orderError}
+            </div>
+          )}
+
+          <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-500">
+                <tr>
+                  <th className="px-5 py-3.5">Order #</th>
+                  <th className="px-5 py-3.5">Customer</th>
+                  <th className="px-5 py-3.5">Payment</th>
+                  <th className="px-5 py-3.5">Total</th>
+                  <th className="px-5 py-3.5">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td className="px-5 py-3.5 font-bold text-zinc-900">{o.orderNumber}</td>
+                    <td className="px-5 py-3.5 text-zinc-600">
+                      {o.user?.name} ({o.user?.email || o.user?.phone})
+                    </td>
+                    <td className="px-5 py-3.5 text-xs">
+                      <span className="font-bold text-zinc-800">{o.paymentMethod || 'COD'}</span>
+                      {o.paymentTrxId && (
+                        <p className="font-mono text-zinc-500">TrxID: {o.paymentTrxId}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 font-semibold">
+                      {formatMoney(o.totalAmount)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <select
+                        value={o.status}
+                        disabled={updatingOrderId === o.id}
+                        onChange={(e) => handleOrderStatus(o.id, e.target.value)}
+                        className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50"
+                      >
+                        {ORDER_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Users Management Tab — Strictly Separated Admins/Authors vs Customers */}
+      {activeTab === 'users' && (
+        <div className="space-y-8">
+          {/* Search Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Input
+              placeholder="Search users by name, email, or phone..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="max-w-md"
+            />
+            <div className="flex items-center gap-3 text-xs font-semibold text-zinc-500">
+              <span>Admins / Authors: {adminsAndAuthors.length}</span>
+              <span>•</span>
+              <span>Customers: {customers.length}</span>
+            </div>
+          </div>
+
+          {userError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+              {userError}
+            </div>
+          )}
+
+          {/* SECTION 1: ADMINS & AUTHORS */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-zinc-900" />
+              <h2 className="text-lg font-bold text-zinc-900">
+                Admins &amp; Authors ({adminsAndAuthors.length})
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-900 text-xs uppercase text-zinc-200">
+                  <tr>
+                    <th className="px-5 py-3.5">Admin / Author</th>
+                    <th className="px-5 py-3.5">Contact &amp; Login Methods</th>
+                    <th className="px-5 py-3.5">Role</th>
+                    <th className="px-5 py-3.5">Joined</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {adminsAndAuthors.map((u) => {
+                    const isSelf = u.id === currentUserId;
+                    return (
+                      <tr key={u.id} className="bg-zinc-50/40">
+                        <td className="px-5 py-3.5 font-semibold text-zinc-900">
+                          <div className="flex items-center gap-2">
+                            <span>{u.name}</span>
+                            {isSelf && <Badge variant="dark">You</Badge>}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-zinc-600">
+                          <div className="space-y-1">
+                            {u.email && <p>{u.email}</p>}
+                            {u.phone && <p>{u.phone}</p>}
+                            <div className="flex gap-1 pt-0.5">
+                              {u.googleLinked && <Badge variant="success">Google</Badge>}
+                              {u.email && <Badge>Email</Badge>}
+                              {u.phone && <Badge>Phone</Badge>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge variant="dark">ADMIN / AUTHOR</Badge>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-zinc-500">
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          {!isSelf && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingUserId === u.id}
+                              onClick={() => handleRoleChange(u.id, 'CUSTOMER')}
+                            >
+                              <ArrowDownLeft className="h-3.5 w-3.5" />
+                              Move to Customer
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* SECTION 2: CUSTOMERS */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-zinc-700" />
+              <h2 className="text-lg font-bold text-zinc-900">
+                Customers ({customers.length})
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-500">
+                  <tr>
+                    <th className="px-5 py-3.5">Customer</th>
+                    <th className="px-5 py-3.5">Contact &amp; Login Methods</th>
+                    <th className="px-5 py-3.5">Orders</th>
+                    <th className="px-5 py-3.5">Joined</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {customers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-10 text-center text-sm text-zinc-500">
+                        No customer accounts found.
+                      </td>
+                    </tr>
+                  ) : (
+                    customers.map((u) => (
+                      <tr key={u.id} className="hover:bg-zinc-50/70">
+                        <td className="px-5 py-3.5 font-semibold text-zinc-900">{u.name}</td>
+                        <td className="px-5 py-3.5 text-xs text-zinc-600">
+                          <div className="space-y-1">
+                            {u.email && <p>{u.email}</p>}
+                            {u.phone && <p>{u.phone}</p>}
+                            <div className="flex gap-1 pt-0.5">
+                              {u.googleLinked && <Badge variant="success">Google</Badge>}
+                              {u.email && <Badge>Email</Badge>}
+                              {u.phone && <Badge>Phone</Badge>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge variant={u.orderCount > 0 ? 'success' : 'default'}>
+                            {u.orderCount} {u.orderCount === 1 ? 'order' : 'orders'}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-zinc-500">
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingUserId === u.id}
+                              onClick={() => handleRoleChange(u.id, 'ADMIN')}
+                            >
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                              Make Admin
+                            </Button>
+                            <button
+                              onClick={() =>
+                                setDeleteTarget({
+                                  type: 'user',
+                                  id: u.id,
+                                  name: u.name,
+                                })
+                              }
+                              className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                              title="Delete customer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       )}
 
@@ -519,187 +860,251 @@ export function AdminDashboardClient({
         </div>
       )}
 
-{/* Site & Payment Settings Tab */}
-      {activeTab === 'settings' && (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setSaving(true);
-            await fetch('/api/admin/settings', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(siteSettings),
-            });
-            setSaving(false);
-            router.refresh();
-          }}
-          className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6"
-        >
-          <div>
-            <h2 className="text-lg font-bold text-zinc-900">General Store Settings</h2>
-            <p className="text-xs text-zinc-500">
-              Control branding, currency symbol, and delivery charges across the entire store.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Input
-              label="Store Name"
-              value={siteSettings.storeName}
-              onChange={(e) => setSiteSettings({ ...siteSettings, storeName: e.target.value })}
-            />
-            <Input
-              label="Currency Symbol"
-              value={siteSettings.currencySymbol}
-              onChange={(e) => setSiteSettings({ ...siteSettings, currencySymbol: e.target.value })}
-            />
-            <Input
-              label="Inside Dhaka Delivery"
-              type="number"
-              value={siteSettings.deliveryChargeInside}
-              onChange={(e) =>
-                setSiteSettings({ ...siteSettings, deliveryChargeInside: e.target.value })
-              }
-            />
-            <Input
-              label="Outside Dhaka Delivery"
-              type="number"
-              value={siteSettings.deliveryChargeOutside}
-              onChange={(e) =>
-                setSiteSettings({ ...siteSettings, deliveryChargeOutside: e.target.value })
-              }
-            />
-          </div>
-
-          {/* WhatsApp Ordering Control */}
-          <div className="space-y-3 border-t border-zinc-100 pt-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-zinc-900">WhatsApp Order System</h3>
-                <p className="text-xs text-zinc-500">
-                  Customers can send itemized cart & total directly to this WhatsApp number.
-                </p>
+    {/* Site & Payment Settings Tab */}
+          {activeTab === 'settings' && (
+            <form
+              onSubmit={handleSaveSettings}
+              className="space-y-8 rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8"
+            >
+              {/* Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-5">
+                <div>
+                  <h2 className="text-lg font-bold text-zinc-900">General Store Settings</h2>
+                  <p className="text-xs text-zinc-500">
+                    Control store branding, site-wide currency symbol, and delivery charges.
+                  </p>
+                </div>
+                {settingsSaved && (
+                  <Badge variant="success">
+                    <Check className="h-3.5 w-3.5" />
+                    Saved &amp; Applied Site-Wide
+                  </Badge>
+                )}
               </div>
-              <input
-                type="checkbox"
-                checked={siteSettings.whatsappEnabled}
-                onChange={(e) =>
-                  setSiteSettings({ ...siteSettings, whatsappEnabled: e.target.checked })
-                }
-                className="h-4 w-4 accent-zinc-900"
-              />
-            </div>
-            <Input
-              label="WhatsApp Number (With Country Code, e.g. 88017XXXXXXXX)"
-              value={siteSettings.whatsappNumber}
-              onChange={(e) =>
-                setSiteSettings({ ...siteSettings, whatsappNumber: e.target.value })
-              }
-            />
-          </div>
 
-          {/* Local Payment Gateways */}
-          <div className="space-y-4 border-t border-zinc-100 pt-5">
-            <h3 className="text-sm font-bold text-zinc-900">
-              On-Site Payment Methods (COD, bKash, Nagad, Rocket, SSLCommerz)
-            </h3>
+              {/* Row 1: Branding (Logo Dropzone Left + Name & Tagline Right) */}
+              <div className="grid items-start gap-6 md:grid-cols-12">
+                <div className="md:col-span-4">
+                  <ImageUpload
+                    label="Site Logo (PNG / SVG / WebP)"
+                    value={siteSettings.logoUrl}
+                    onChange={(url) => setSiteSettings({ ...siteSettings, logoUrl: url })}
+                  />
+                </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center justify-between rounded-xl border border-zinc-200 p-3.5">
-                <span className="text-sm font-semibold">Cash on Delivery (COD)</span>
-                <input
-                  type="checkbox"
-                  checked={siteSettings.codEnabled}
-                  onChange={(e) =>
-                    setSiteSettings({ ...siteSettings, codEnabled: e.target.checked })
-                  }
-                  className="h-4 w-4 accent-zinc-900"
-                />
-              </label>
-
-              <label className="flex items-center justify-between rounded-xl border border-zinc-200 p-3.5">
-                <span className="text-sm font-semibold">SSLCommerz Online Gateway</span>
-                <input
-                  type="checkbox"
-                  checked={siteSettings.sslcommerzEnabled}
-                  onChange={(e) =>
-                    setSiteSettings({ ...siteSettings, sslcommerzEnabled: e.target.checked })
-                  }
-                  className="h-4 w-4 accent-zinc-900"
-                />
-              </label>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
-                <label className="flex items-center justify-between text-sm font-bold text-pink-600">
-                  <span>bKash</span>
-                  <input
-                    type="checkbox"
-                    checked={siteSettings.bkashEnabled}
+                <div className="space-y-4 md:col-span-8">
+                  <Input
+                    label="Site Name"
+                    placeholder="ATELIER."
+                    value={siteSettings.storeName}
                     onChange={(e) =>
-                      setSiteSettings({ ...siteSettings, bkashEnabled: e.target.checked })
+                      setSiteSettings({ ...siteSettings, storeName: e.target.value })
+                    }
+                    required
+                  />
+                  <Input
+                    label="Store Tagline / Footer Description"
+                    placeholder="Contemporary everyday essentials crafted with precision fabrics..."
+                    value={siteSettings.tagline}
+                    onChange={(e) =>
+                      setSiteSettings({ ...siteSettings, tagline: e.target.value })
                     }
                   />
-                </label>
+                </div>
+              </div>
+
+              {/* Row 2: Symmetrical 3-Column Row (Currency + Inside/Outside Delivery) */}
+              <div className="grid gap-5 border-t border-zinc-100 pt-6 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Store Currency
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    {['৳', '$', '€', '£', '₹'].map((sym) => (
+                      <button
+                        key={sym}
+                        type="button"
+                        onClick={() => setSiteSettings({ ...siteSettings, currencySymbol: sym })}
+                        className={`h-11 flex-1 rounded-lg border text-sm font-bold transition-colors ${
+                          siteSettings.currencySymbol === sym
+                            ? 'border-zinc-900 bg-zinc-900 text-white'
+                            : 'border-zinc-300 bg-white text-zinc-700 hover:border-zinc-900'
+                        }`}
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                    <input
+                      value={siteSettings.currencySymbol}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, currencySymbol: e.target.value })
+                      }
+                      className="h-11 w-12 shrink-0 rounded-lg border border-zinc-300 px-1.5 text-center text-sm font-bold focus:border-zinc-900 focus:outline-none"
+                      placeholder="৳"
+                      title="Custom symbol"
+                    />
+                  </div>
+                </div>
+
                 <Input
-                  placeholder="bKash Merchant/Personal Number"
-                  value={siteSettings.bkashNumber || ''}
+                  label={`Inside Dhaka Delivery (${siteSettings.currencySymbol})`}
+                  type="number"
+                  value={siteSettings.deliveryChargeInside}
                   onChange={(e) =>
-                    setSiteSettings({ ...siteSettings, bkashNumber: e.target.value })
+                    setSiteSettings({ ...siteSettings, deliveryChargeInside: e.target.value })
+                  }
+                />
+
+                <Input
+                  label={`Outside Dhaka Delivery (${siteSettings.currencySymbol})`}
+                  type="number"
+                  value={siteSettings.deliveryChargeOutside}
+                  onChange={(e) =>
+                    setSiteSettings({ ...siteSettings, deliveryChargeOutside: e.target.value })
                   }
                 />
               </div>
 
-              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
-                <label className="flex items-center justify-between text-sm font-bold text-orange-600">
-                  <span>Nagad</span>
+              {/* Row 3: WhatsApp Ordering Control */}
+              <div className="space-y-4 border-t border-zinc-100 pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-zinc-900">WhatsApp Order System</h3>
+                    <p className="text-xs text-zinc-500">
+                      Customers can send itemized cart &amp; total directly to this WhatsApp number.
+                    </p>
+                  </div>
                   <input
                     type="checkbox"
-                    checked={siteSettings.nagadEnabled}
+                    checked={siteSettings.whatsappEnabled}
                     onChange={(e) =>
-                      setSiteSettings({ ...siteSettings, nagadEnabled: e.target.checked })
+                      setSiteSettings({ ...siteSettings, whatsappEnabled: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded accent-zinc-900"
+                  />
+                </div>
+
+                <div className="max-w-md">
+                  <Input
+                    label="WhatsApp Number (With Country Code, e.g. 88017XXXXXXXX)"
+                    value={siteSettings.whatsappNumber}
+                    onChange={(e) =>
+                      setSiteSettings({ ...siteSettings, whatsappNumber: e.target.value })
                     }
                   />
-                </label>
-                <Input
-                  placeholder="Nagad Merchant/Personal Number"
-                  value={siteSettings.nagadNumber || ''}
-                  onChange={(e) =>
-                    setSiteSettings({ ...siteSettings, nagadNumber: e.target.value })
-                  }
-                />
+                </div>
               </div>
 
-              <div className="space-y-2 rounded-xl border border-zinc-200 p-3.5">
-                <label className="flex items-center justify-between text-sm font-bold text-purple-700">
-                  <span>Rocket</span>
-                  <input
-                    type="checkbox"
-                    checked={siteSettings.rocketEnabled}
-                    onChange={(e) =>
-                      setSiteSettings({ ...siteSettings, rocketEnabled: e.target.checked })
-                    }
-                  />
-                </label>
-                <Input
-                  placeholder="Rocket Account Number"
-                  value={siteSettings.rocketNumber || ''}
-                  onChange={(e) =>
-                    setSiteSettings({ ...siteSettings, rocketNumber: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
+              {/* Row 4: Local Payment Gateways */}
+              <div className="space-y-4 border-t border-zinc-100 pt-6">
+                <h3 className="text-sm font-bold text-zinc-900">
+                  On-Site Payment Methods (COD, bKash, Nagad, Rocket, SSLCommerz)
+                </h3>
 
-          <div className="flex justify-end">
-            <Button type="submit" isLoading={saving}>
-              Save Site & Payment Settings
-            </Button>
-          </div>
-        </form>
-      )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-300">
+                    <span className="text-sm font-semibold text-zinc-800">
+                      Cash on Delivery (COD)
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={siteSettings.codEnabled}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, codEnabled: e.target.checked })
+                      }
+                      className="h-4 w-4 accent-zinc-900"
+                    />
+                  </label>
+
+                  <label className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-300">
+                    <span className="text-sm font-semibold text-zinc-800">
+                      SSLCommerz Online Gateway
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={siteSettings.sslcommerzEnabled}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, sslcommerzEnabled: e.target.checked })
+                      }
+                      className="h-4 w-4 accent-zinc-900"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2.5 rounded-xl border border-zinc-200 p-4">
+                    <label className="flex cursor-pointer items-center justify-between text-sm font-bold text-pink-600">
+                      <span>bKash</span>
+                      <input
+                        type="checkbox"
+                        checked={siteSettings.bkashEnabled}
+                        onChange={(e) =>
+                          setSiteSettings({ ...siteSettings, bkashEnabled: e.target.checked })
+                        }
+                        className="h-4 w-4 accent-pink-600"
+                      />
+                    </label>
+                    <Input
+                      placeholder="bKash Merchant/Personal Number"
+                      value={siteSettings.bkashNumber || ''}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, bkashNumber: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2.5 rounded-xl border border-zinc-200 p-4">
+                    <label className="flex cursor-pointer items-center justify-between text-sm font-bold text-orange-600">
+                      <span>Nagad</span>
+                      <input
+                        type="checkbox"
+                        checked={siteSettings.nagadEnabled}
+                        onChange={(e) =>
+                          setSiteSettings({ ...siteSettings, nagadEnabled: e.target.checked })
+                        }
+                        className="h-4 w-4 accent-orange-600"
+                      />
+                    </label>
+                    <Input
+                      placeholder="Nagad Merchant/Personal Number"
+                      value={siteSettings.nagadNumber || ''}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, nagadNumber: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2.5 rounded-xl border border-zinc-200 p-4">
+                    <label className="flex cursor-pointer items-center justify-between text-sm font-bold text-purple-700">
+                      <span>Rocket</span>
+                      <input
+                        type="checkbox"
+                        checked={siteSettings.rocketEnabled}
+                        onChange={(e) =>
+                          setSiteSettings({ ...siteSettings, rocketEnabled: e.target.checked })
+                        }
+                        className="h-4 w-4 accent-purple-700"
+                      />
+                    </label>
+                    <Input
+                      placeholder="Rocket Account Number"
+                      value={siteSettings.rocketNumber || ''}
+                      onChange={(e) =>
+                        setSiteSettings({ ...siteSettings, rocketNumber: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-zinc-100 pt-5">
+                <Button type="submit" isLoading={saving}>
+                  Save Site &amp; Payment Settings
+                </Button>
+              </div>
+            </form>
+          )}
+
       {/* Category Modal (File Upload) */}
       <Modal
         isOpen={categoryModalOpen}
@@ -898,7 +1303,7 @@ export function AdminDashboardClient({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Base Price ($)"
+              label={`Base Price (${currency})`}
               type="number"
               step="0.01"
               value={form.basePrice}
@@ -906,7 +1311,7 @@ export function AdminDashboardClient({
               required
             />
             <Input
-              label="Sale Price (Optional)"
+              label={`Sale Price (${currency}) (Optional)`}
               type="number"
               step="0.01"
               value={form.salePrice}
@@ -980,7 +1385,13 @@ export function AdminDashboardClient({
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
         isLoading={deleting}
-        title={deleteTarget?.type === 'product' ? 'Delete Product' : 'Delete Slide'}
+        title={
+          deleteTarget?.type === 'product'
+            ? 'Delete Product'
+            : deleteTarget?.type === 'slide'
+            ? 'Delete Slide'
+            : 'Delete Customer Account'
+        }
         message={`Are you sure you want to permanently delete "${deleteTarget?.name}"? This action cannot be undone.`}
       />
     </div>
