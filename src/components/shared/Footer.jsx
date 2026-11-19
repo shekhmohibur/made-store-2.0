@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 import { useSettings } from '@/context/SettingsContext';
 
 export function Footer() {
+  const { data: session } = useSession();
   const { settings } = useSettings();
+
   const storeName = settings?.storeName || 'ATELIER.';
   const logoUrl = settings?.logoUrl;
   const tagline =
@@ -15,12 +18,15 @@ export function Footer() {
     <footer className="border-t border-zinc-200 bg-zinc-950 text-zinc-400">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2.5 text-xl font-black tracking-tighter text-white">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2.5 text-xl font-black tracking-tighter text-white"
+          >
             {logoUrl && (
               <img
                 src={logoUrl}
                 alt={storeName}
-                className="h-8 w-auto max-w-[130px] rounded bg-white/10 p-1 object-contain"
+                className="h-8 w-auto max-w-[130px] rounded bg-white/10 object-contain p-1"
               />
             )}
             <span>{storeName}</span>
@@ -41,9 +47,49 @@ export function Footer() {
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-white">Account</h4>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link href="/profile" className="hover:text-white">Profile &amp; Linked Logins</Link></li>
-            <li><Link href="/profile" className="hover:text-white">Order History</Link></li>
-            <li><Link href="/login" className="hover:text-white">Sign In</Link></li>
+            {session?.user ? (
+              <>
+                <li>
+                  <Link href="/profile" className="hover:text-white">
+                    Profile &amp; Linked Logins
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/profile" className="hover:text-white">
+                    Order History
+                  </Link>
+                </li>
+                {session.user.role === 'ADMIN' && (
+                  <li>
+                    <Link href="/admin" className="font-semibold text-white hover:underline">
+                      Admin Dashboard
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="text-left text-zinc-400 transition-colors hover:text-white"
+                  >
+                    Sign Out
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link href="/login" className="hover:text-white">
+                    Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/register" className="hover:text-white">
+                    Create Account
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 

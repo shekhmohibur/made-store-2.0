@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function ShopPage({ searchParams }) {
   const resolvedParams = await searchParams;
   const { category, size, sort, sale, q } = resolvedParams || {};
+  
 
   const where = {
     isActive: true,

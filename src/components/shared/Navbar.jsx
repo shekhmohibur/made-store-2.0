@@ -18,7 +18,6 @@ import { useSettings } from '@/context/SettingsContext';
 
 const navLinks = [
   { label: 'New Arrivals', href: '/shop?sort=newest' },
-  { label: 'Men', href: '/shop?category=men' },
   { label: 'Women', href: '/shop?category=women' },
   { label: 'Outerwear', href: '/shop?category=outerwear' },
 ];
